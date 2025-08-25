@@ -1,533 +1,524 @@
-"use client"
-import Image from "next/image";
-import { useState, useEffect, useCallback } from 'react';
+'use client';
+import { useState, useEffect } from 'react';
+import { useUser } from '@civic/auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [isClient, setIsClient] = useState(false);
-
-  // Set client-side flag
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentFeature, setCurrentFeature] = useState(0);
+  const [authState, setAuthState] = useState('idle'); // idle, signing-in, verifying, verified, error
+  const [isMobile, setIsMobile] = useState(false);
+  
+  const { user, isLoading, signIn, signOut } = useUser();
+  const router = useRouter();
+  
+  // Detect mobile screens
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Handle scroll events only on client-side
-  useEffect(() => {
-    if (!isClient) return;
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-      
-      // Update scroll progress
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.body.scrollHeight;
-      const progress = (scrollY / (documentHeight - windowHeight)) * 100;
-      setScrollProgress(progress);
-      
-      // Determine active section
-      const sections = ['home', 'features', 'rewards'];
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element && scrollY < element.offsetTop + element.offsetHeight / 2) {
-          setActiveSection(section);
-          break;
-        }
-      }
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
     };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initialize values
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isClient]);
-
-  // Safe scroll function
-  const scrollToSection = useCallback((sectionId) => {
-    if (!isClient) return;
     
-    const element = document.getElementById(sectionId);
-    if (element) {
-      window.scrollTo({
-        top: element.offsetTop - 80,
-        behavior: 'smooth'
-      });
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  useEffect(() => {
+    setIsVisible(true);
+    
+    // Preload dashboard for faster navigation
+    router.prefetch('/dashboard');
+    
+    // Rotate features every 3 seconds
+    const interval = setInterval(() => {
+      setCurrentFeature(prev => (prev + 1) % 3);
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [router]);
+  
+  // Handle user state changes and routing
+  useEffect(() => {
+    if (isLoading) {
+      setAuthState('verifying');
+      return;
     }
-  }, [isClient]);
-
+    if (user && authState !== 'verified') {
+      setAuthState('verified');
+      // Immediate redirect without delay
+      setTimeout(() => router.push('/dashboard'), 100);
+      return;
+    }
+    // Reset to idle if not loading and no user
+    if (!isLoading && !user && authState !== 'idle' && authState !== 'error') {
+      setAuthState('idle');
+    }
+  }, [user, isLoading, router, authState]);
+  
+  const features = [
+    "Micro-grants available",
+    "Project Spotlight", 
+    "Real Opportunities"
+  ];
+  
+  // Enhanced sign-in handler
+  const handleSignIn = async () => {
+    try {
+      setAuthState('signing-in');
+      console.log("Starting sign-in process");
+      
+      await signIn();
+      console.log("Sign-in completed successfully");
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      setAuthState('error');
+      
+      // Reset to idle after showing error
+      setTimeout(() => {
+        setAuthState('idle');
+      }, 3000);
+    }
+  };
+  
+  // Sign-out handler
+  const handleSignOut = async () => {
+    try {
+      console.log("Starting sign-out process");
+      await signOut();
+      setAuthState('idle');
+      console.log("Sign-out completed successfully");
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      setAuthState('error');
+    }
+  };
+  
+  // Get button text and state based on auth state
+  const getAuthButtonState = () => {
+    switch (authState) {
+      case 'signing-in':
+        return {
+          text: 'Opening Civic...',
+          disabled: true,
+          className: 'bg-teal-500 text-white cursor-wait',
+          showSpinner: true
+        };
+      case 'verifying':
+        return {
+          text: 'Verifying...',
+          disabled: true,
+          className: 'bg-teal-500 text-white cursor-wait',
+          showSpinner: true
+        };
+      case 'verified':
+        return {
+          text: 'Redirecting...',
+          disabled: true,
+          className: 'bg-green-600 text-white cursor-wait',
+          showSpinner: true
+        };
+      case 'error':
+        return {
+          text: 'Sign in Failed - Retry',
+          disabled: false,
+          className: 'bg-red-500 hover:bg-red-600 text-white',
+          showSpinner: false
+        };
+      default:
+        if (user) {
+          return {
+            text: 'Go to Dashboard',
+            disabled: false,
+            className: 'bg-teal-600 hover:bg-teal-700 text-white',
+            showSpinner: false
+          };
+        }
+        return {
+          text: 'Sign in with Civic',
+          disabled: false,
+          className: 'bg-teal-600 hover:bg-teal-700 text-white',
+          showSpinner: false
+        };
+    }
+  };
+  
+  const buttonState = getAuthButtonState();
+  
+  // Loading spinner component
+  const LoadingSpinner = ({ className = "h-5 w-5" }) => (
+    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
+  
   return (
-    <div className="font-sans bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef] text-[#343a40] min-h-screen relative overflow-x-hidden">
-     
-      {/* Fixed: Use state variable instead of direct window access */}
-      <div className="fixed top-0 left-0 h-1 bg-blue-500 z-50 transition-all duration-300" 
-           style={{ width: `${scrollProgress}%` }}>
-      </div>
-     
-      {/* Rest of your component remains the same */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(10)].map((_, i) => (
-          <div 
-            key={i}
-            className="absolute rounded-full bg-blue-100 opacity-20 animate-pulse"
-            style={{
-              width: `${Math.random() * 200 + 50}px`,
-              height: `${Math.random() * 200 + 50}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animationDuration: `${Math.random() * 10 + 10}s`,
-              animationDelay: `${Math.random() * 5}s`
-            }}
-          />
-        ))}
-      </div>
-     
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg py-2' : 'bg-transparent py-4'}`}>
-        <div className="container mx-auto flex items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <svg className="text-blue-600" fill="none" height="32" viewBox="0 0 24 24" width="32" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-              </svg>
-            </div>
-            <h2 className="text-blue-700 text-2xl font-bold tracking-tighter">DeepLearn</h2>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 font-sans">
+      {/* Loading Overlay */}
+      {(authState === 'signing-in' || authState === 'verifying' || authState === 'verified') && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm mx-4">
+            <LoadingSpinner className="h-12 w-12 mx-auto mb-4 text-teal-600" />
+            <p className="text-teal-700 font-medium text-lg mb-2">
+              {authState === 'signing-in' && 'Opening Civic...'}
+              {authState === 'verifying' && 'Verifying credentials...'}
+              {authState === 'verified' && 'Success! Redirecting...'}
+            </p>
+            <p className="text-sm text-teal-500">
+              {authState === 'signing-in' && 'Complete authentication in the popup window'}
+              {authState === 'verifying' && 'Checking your university credentials'}
+              {authState === 'verified' && 'Taking you to your dashboard'}
+            </p>
           </div>
+        </div>
+      )}
+      
+      {/* Header */}
+        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
+         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+           <div className="flex items-center">
+             {/* <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div> */}
+            <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight ">
+   <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
+ </span>
+           </div>
+           <nav className="hidden md:flex space-x-8">
+             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">How it works</a>
+             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Spotlight</a>
+             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Opportunities</a>
+             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">About</a>
+           </nav>
           
-          <nav className="hidden text-2xl md:flex items-center gap-8">
-            {['About', 'How it Works', 'Rewards', 'Contact'].map((item) => (
-              <a 
-                key={item}
-                className="text-base text-2xl hover:text-blue-600 transition-colors relative group" 
-                href="/"
+           {/* Header Auth Button */}
+           {user && authState === 'idle' ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-teal-700 font-medium">Hello, {user.name}!</span>
+              <button 
+                onClick={handleSignOut}
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg"
               >
-                {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-500 transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
-          </nav>
-          
-          <div className="flex items-center gap-3">
-            <button className="group relative flex min-w-[90px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-11 px-5 bg-transparent text-[#001f3f] text-base font-bold leading-normal tracking-wide border-3 border-[#001f3f] transition-all duration-300">
-              <a href="/login">
-                <span className="relative z-10 truncate">Login</span>
-              </a>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={user ? () => router.push('/dashboard') : handleSignIn}
+              disabled={buttonState.disabled}
+              className={`px-6 py-2 rounded-lg font-medium  cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center ${buttonState.className}`}
+            >
+              {buttonState.showSpinner && <LoadingSpinner className="h-4 w-4 mr-2" />}
+              {buttonState.text}
             </button>
-            <button className="relative flex min-w-[90px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-11 px-5 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-base font-bold leading-normal tracking-wide shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-              <a href="/register">
-                <span className="truncate">Sign Up</span>
-              </a>
-            </button>
-          </div>
+          )}
         </div>
       </header>
+
       
-      <section id="home" className="relative min-h-[calc(100vh-80px)] flex items-center justify-center text-white overflow-hidden">
-        <div className="absolute inset-0">
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuB9OKFwxgvOGuvonCap0iaHBWgYaSW2X5SwFwx7e-JwS4AuDYwza9mv19aefMDgaMSf-WCso1CmQrZbikWlhVKXfs9iRoUtMVc2nOd3NpiO7hXx6kEf-xyP80aAsyUsHVu-84GOAms2KDHiUzOBWIkrv7QGm0StkRJRkWp-R6z4ommRRq8fP-sUy0veQjc8Enh2pWW4FkEbWTvc9zLoQkj-FOC7r1JrdWF33hIP8V9sbrvmXqm7EVpGe6oE4wWMWjCICxWbhAZ1lco")` }}
-          ></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-blue-800/80"></div>
-          
-          {[...Array(15)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute rounded-full bg-white/10 backdrop-blur-sm"
-              style={{
-                width: `${Math.random() * 20 + 5}px`,
-                height: `${Math.random() * 20 + 5}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animation: `float ${Math.random() * 10 + 10}s infinite ease-in-out`,
-                animationDelay: `${Math.random() * 5}s`
-              }}
-            />
-          ))}
-        </div>
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-40 h-40 bg-teal-200 rounded-full opacity-50 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 -mb-24 -ml-24 w-64 h-64 bg-orange-200 rounded-full opacity-30 animate-pulse delay-700"></div>
         
-        <div className="relative z-10 text-center px-4 py-20 flex flex-col items-center max-w-5xl">
-          <div className="mb-6 inline-block px-7 py-3 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium tracking-wide animate-pulse">
-             NEW: AI-Powered Learning Rewards Platform
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 animate-fade-in">
-            Where Knowledge Becomes
-            <span className="block mt-2">
-              <span className="relative">
-                <span className="absolute inset-0 bg-yellow-400 transform -rotate-2 z-0"></span>
-                <span className="relative z-10 text-blue-900">Currency</span>
-              </span>
-            </span>
-          </h1>
-          <p className="max-w-3xl mx-auto text-2xl md:text-xl font-light mb-10 text-blue-100 animate-fade-in-up">
-            Earn verifiable learning points by applying your skills to real-world challenges. Powered by AI, designed for impact.
-          </p>
-          
-          <div className="flex flex-wrap gap-5 justify-center mb-12">
-            <button className="group relative flex min-w-[180px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-8 bg-gradient-to-r from-blue-500 to-blue-700 text-white text-lg font-bold leading-normal tracking-wide shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <span className="relative z-10 truncate">Start Earning</span>
-              <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-              <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                </svg>
-              </span>
-            </button>
-            <button className="group relative flex min-w-[180px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-8 bg-transparent text-white text-lg font-bold leading-normal tracking-wide border-2 border-white/30 hover:border-white transition-all duration-300 transform hover:-translate-y-1">
-              <span className="relative z-10 truncate">Learn More</span>
-              <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-8 text-blue-200 text-lg">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <span>Free to start</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              <span>AI-powered</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <svg className="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-          </svg>
-        </div>
-      </section>
-      
-      <section id="features" className="py-20 md:py-32 bg-gradient-to-b from-white to-blue-50 relative">
-        <div className="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-blue-50 to-transparent"></div>
-        
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-block px-7 py-3 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
-              POWERFUL FEATURES
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-[#001f3f] mb-4">
-              Unlock Your Potential
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              DeepLearn Points transforms your learning journey into a rewarding experience with these powerful features.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="group relative flex flex-col items-center text-center p-8 rounded-2xl bg-white shadow-lg border border-blue-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden">
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full opacity-70 group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="relative mb-5 p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300">
-                <svg fill="currentColor" height="36px" viewBox="0 0 256 256" width="36px" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M248,124a56.11,56.11,0,0,0-32-50.61V72a48,48,0,0,0-88-26.49A48,48,0,0,0,40,72v1.39a56,56,0,0,0,0,101.2V176a48,48,0,0,0,88,26.49A48,48,0,0,0,216,176v-1.41A56.09,56.09,0,0,0,248,124ZM88,208a32,32,0,0,1-31.81-28.56A55.87,55.87,0,0,0,64,180h8a8,8,0,0,0,0-16H64A40,40,0,0,1,50.67,86.27,8,8,0,0,0,56,78.73V72a32,32,0,0,1,64,0v68.26A47.8,47.8,0,0,0,88,128a8,8,0,0,0,0,16,32,32,0,0,1,0,64Zm104-44h-8a8,8,0,0,0,0,16h8a55.87,55.87,0,0,0,7.81-.56A32,32,0,1,1,168,144a8,8,0,0,0,0-16,47.8,47.8,0,0,0-32,12.26V72a32,32,0,0,1,64,0v6.73a8,8,0,0,0,5.33,7.54A40,40,0,0,1,192,164Zm16-52a8,8,0,0,1-8,8h-4a36,36,0,0,1-36-36V80a8,8,0,0,1,16,0v4a20,20,0,0,0,20,20h4A8,8,0,0,1,208,112ZM60,120H56a8,8,0,0,1,0-16h4A20,20,0,0,0,80,84V80a8,8,0,0,1,16,0v4A36,36,0,0,1,60,120Z"></path>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#001f3f] mb-2">AI-Powered Learning</h3>
-              <p className="text-gray-600">Leverage cutting-edge AI to personalize your learning path and maximize your skill development.</p>
-              <div className="mt-4 text-blue-600 font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Learn more</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </div>
-            </div>
-            
-            <div className="group relative flex flex-col items-center text-center p-8 rounded-2xl bg-white shadow-lg border border-blue-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden">
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full opacity-70 group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="relative mb-5 p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300">
-                <svg fill="currentColor" height="36px" viewBox="0 0 256 256" width="36px" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M216,56H176V48a24,24,0,0,0-24-24H104A24,24,0,0,0,80,48v8H40A16,16,0,0,0,24,72V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V72A16,16,0,0,0,216,56ZM96,48a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96ZM216,72v41.61A184,184,0,0,1,128,136a184.07,184.07,0,0,1-88-22.38V72Zm0,128H40V131.64A200.19,200.19,0,0,0,128,152a200.25,200.25,0,0,0,88-20.37V200ZM104,112a8,8,0,0,1,8-8h32a8,8,0,0,1,0,16H112A8,8,0,0,1,104,112Z"></path>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#001f3f] mb-2">Real-World Task Application</h3>
-              <p className="text-gray-600">Apply your knowledge to solve real-world problems, gaining practical experience and making a tangible impact.</p>
-              <div className="mt-4 text-blue-600 font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Learn more</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </div>
-            </div>
-            
-            <div className="group relative flex flex-col items-center text-center p-8 rounded-2xl bg-white shadow-lg border border-blue-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden">
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full opacity-70 group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="relative mb-5 p-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300">
-                <svg fill="currentColor" height="36px" viewBox="0 0 256 256" width="36px" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M216,72H180.92c.39-.33.79-.65,1.17-1A29.53,29.53,0,0,0,192,49.57,32.62,32.62,0,0,0,158.44,16,29.53,29.53,0,0,0,137,25.91a54.94,54.94,0,0,0-9,14.48,54.94,54.94,0,0,0-9-14.48A29.53,29.53,0,0,0,97.56,16,32.62,32.62,0,0,0,64,49.57,29.53,29.53,0,0,0,73.91,71c.38.33.78.65,1.17,1H40A16,16,0,0,0,24,88v32a16,16,0,0,0,16,16v64a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V136a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72ZM149,36.51a13.69,13.69,0,0,1,10-4.5h.49A16.62,16.62,0,0,1,176,49.08a13.69,13.69,0,0,1-4.5,10c-9.49,8.4-25.24,11.36-35,12.4C137.7,60.89,141,45.5,149,36.51Zm-64.09.36A16.63,16.63,0,0,1,96.59,32h.49a13.69,13.69,0,0,1,10,4.5c8.39,9.48,11.35,25.2,12.39,34.92-9.72-1-25.44-4-34.92-12.39a13.69,13.69,0,0,1-4.5-10A16.6,16.6,0,0,1,84.87,36.87ZM40,88h80v32H40Zm16,48h64v64H56Zm144,64H136V136h64Zm16-80H136V88h80v32Z"></path>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#001f3f] mb-2">Redeemable Rewards</h3>
-              <p className="text-gray-600">Convert your learning points into exciting rewards, from educational resources to exclusive experiences.</p>
-              <div className="mt-4 text-blue-600 font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                <span>Learn more</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { value: "10K+", label: "Active Learners" },
-              { value: "50+", label: "Expert Mentors" },
-              { value: "500+", label: "Learning Tasks" },
-              { value: "98%", label: "Success Rate" }
-            ].map((stat, index) => (
-              <div key={index} className="p-6 bg-white rounded-xl shadow-sm border border-blue-100">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{stat.value}</div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      <section id="rewards" className="py-20 md:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-blue-700"></div>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+CiAgPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0iI2ZmZiIvPgo8L3N2Zz4=')] bg-repeat"></div>
-        </div>
-        
-        {[...Array(20)].map((_, i) => (
-          <div 
-            key={i}
-            className="absolute rounded-full bg-white/5 backdrop-blur-sm"
-            style={{
-              width: `${Math.random() * 100 + 20}px`,
-              height: `${Math.random() * 100 + 20}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animation: `float ${Math.random() * 15 + 10}s infinite ease-in-out`,
-              animationDelay: `${Math.random() * 5}s`
-            }}
-          />
-        ))}
-        
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-block px-7 py-3 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium mb-4 text-white">
-              JOIN THE REVOLUTION
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-white mb-4">
-              Join the DeepLearn Points Community
-            </h2>
-            <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
-              Embark on a journey where your knowledge is valued and your contributions make a difference.
+        <div className="container mx-auto px-4 flex flex-col md:flex-row items-center">
+          <div className={`md:w-1/2 mb-12 md:mb-0 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <h1 className="text-5xl md:text-6xl font-bold text-teal-900 leading-tight mb-6">
+              The Student Modern <span className="text-orange-500">Innovators'</span> Park
+            </h1>
+            <p className="text-xl text-teal-700 mb-8">
+              Show your project, meet collaborators, and get funding — all in one verified place.
             </p>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto mb-10 border border-white/20">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
-                <div className="flex items-center gap-3 text-white">
-                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span>Free forever for learners</span>
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+              {/* Main CTA Button */}
+              {user && authState === 'idle' ? (
+                <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                  <a 
+                    href="/dashboard"
+                    className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 text-center"
+                  >
+                    Go to Dashboard →
+                  </a>
+                  <button 
+                    onClick={handleSignOut}
+                    className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
+                  >
+                    Sign Out
+                  </button>
                 </div>
-                <div className="hidden md:block w-px h-6 bg-white/30"></div>
-                <div className="flex items-center gap-3 text-white">
-                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span>AI-powered recommendations</span>
-                </div>
-                <div className="hidden md:block w-px h-6 bg-white/30"></div>
-                <div className="flex items-center gap-3 text-white">
-                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span>Real rewards for real skills</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="group relative flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-8 bg-gradient-to-r from-green-500 to-green-600 text-white text-lg font-bold leading-normal tracking-wide shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                <span className="relative z-10 truncate">Get Started for Free</span>
-                <span className="absolute inset-0 bg-gradient-to-r from-green-600 to-green-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                  </svg>
-                </span>
-              </button>
-              <button className="group relative flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-8 bg-transparent text-white text-lg font-bold leading-normal tracking-wide border-2 border-white/30 hover:border-white transition-all duration-300 transform hover:-translate-y-1">
-                <span className="relative z-10 truncate">View Rewards</span>
-                <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+              ) : (
+                <button 
+                  onClick={user ? () => router.push('/dashboard') : handleSignIn}
+                  disabled={buttonState.disabled}
+                  className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center group ${buttonState.className}`}
+                >
+                  {buttonState.showSpinner ? (
+                    <>
+                      <LoadingSpinner className="h-5 w-5 mr-3" />
+                      <span>{buttonState.text}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2 group-hover:scale-110 transition-transform">
+                        {buttonState.text}
+                      </span>
+                      {!user && authState === 'idle' && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                      )}
+                    </>
+                  )}
+                </button>
+              )}
+              
+              <button className="border-2 border-teal-600 text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300">
+                Learn more
               </button>
             </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Testimonials Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-blue-50 to-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-block px-7 py-3 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
-              SUCCESS STORIES
+            
+            {/* Status message */}
+            <div className="mt-4">
+              {authState === 'error' && (
+                <p className="text-sm text-red-600 font-medium">Authentication failed. Please try again.</p>
+              )}
+              {authState === 'idle' && !user && (
+                <p className="text-sm text-teal-600">Only verified university students — faster access to opportunities.</p>
+              )}
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter text-[#001f3f] mb-4">
-              What Our Learners Say
-            </h2>
-            <p className="text-lg text-gray-600">
-              Join thousands of learners who are already earning rewards for their knowledge.
-            </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Alex Johnson",
-                role: "Data Science Student",
-                content: "DeepLearn Points transformed my learning journey. I've earned enough points to get a premium data science course while building my portfolio!",
-                avatar: "AJ"
-              },
-              {
-                name: "Samira Khan",
-                role: "UX Designer",
-                content: "The real-world tasks helped me bridge the gap between theory and practice. Plus, redeeming points for design tools was a game-changer!",
-                avatar: "SK"
-              },
-              {
-                name: "Michael Chen",
-                role: "Software Developer",
-                content: "I've learned more in 3 months with DeepLearn Points than in a year of traditional courses. The AI recommendations are spot-on!",
-                avatar: "MC"
-              }
-            ].map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg p-8 border border-blue-100 hover:shadow-xl transition-all duration-300">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold mr-4">
-                    {testimonial.avatar}
+          {/* Project Card Demo */}
+          <div className="md:w-1/2 relative">
+            <div className="relative z-10 transform transition-all duration-1000 hover:scale-105">
+              <div className="bg-white p-2 rounded-2xl shadow-2xl">
+                <div className="h-64 rounded-xl overflow-hidden relative">
+                  {/* High-quality project image */}
+                  <img 
+                    src="https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+                    alt="AI Project" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-white text-center p-4">
+                      <h3 className="text-2xl font-bold mb-2">Attendance AI</h3>
+                      <p className="text-teal-100">Low-data app that auto-fills attendance using cheap beacons</p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-[#001f3f]">{testimonial.name}</div>
-                    <div className="text-sm text-gray-600">{testimonial.role}</div>
-                  </div>
-                </div>
-                <div className="text-gray-600 italic">
-                  "{testimonial.content}"
-                </div>
-                <div className="flex mt-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  <div className="absolute top-4 left-4 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">AI</div>
+                  <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  ))}
+                    New
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-teal-200 rounded-full flex items-center justify-center font-bold text-teal-700">A</div>
+                    <div className="ml-3">
+                      <p className="font-medium text-teal-900">Amina O. (OAU)</p>
+                      <div className="flex items-center text-sm text-teal-500">
+                        <span>42 Sparks</span>
+                        <span className="mx-2">•</span>
+                        <span className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          3 collaborators
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="bg-teal-100 text-teal-700 text-xs font-medium px-3 py-1 rounded-full">Prototype Stage</span>
+                    <button className="bg-teal-100 hover:bg-teal-200 text-teal-700 text-sm px-3 py-1 rounded-lg transition-colors">
+                      View Project
+                    </button>
+                  </div>
                 </div>
               </div>
+            </div>
+            
+            <div className="absolute -top-4 -right-4 bg-white p-4 rounded-xl shadow-lg z-20">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
+                <span className="text-sm font-semibold">Micro-grants available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Trust Bar */}
+      {/* <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <p className="text-center text-teal-600 text-sm mb-8">Trusted by university alumni and partners</p>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center">
+            {['Google for Startups', 'Microsoft Learn', 'Intel AI', 'AWS Educate', 'OAU Alumni Fund', 'TechCampus'].map((partner, index) => (
+              <div key={index} className="h-12 w-32 bg-teal-50 rounded-lg flex items-center justify-center font-bold text-teal-700 transition-all duration-300 hover:bg-teal-100 hover:shadow-md">
+                {partner}
+              </div>
             ))}
+          </div>
+        </div>
+      </section>
+       */}
+      {/* How It Works */}
+      <section className="py-20 bg-gradient-to-b from-teal-50 to-teal-100">
+        <div className="container mx-auto px-4">
+          <h2 className="text-4xl font-bold text-center text-teal-900 mb-4">How it works</h2>
+          <p className="text-center text-teal-600 mb-16 max-w-2xl mx-auto">Getting your project noticed has never been easier. Just follow these three simple steps.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { step: '1', title: 'Sign in fast', desc: 'Civic Auth verifies you in one tap — no forms, no hassle.' },
+              { step: '2', title: 'Showcase your work', desc: 'Create a Project Card with title, pitch, tags, and media in minutes.' },
+              { step: '3', title: 'Get discovered', desc: 'Gain visibility through upvotes, Campus Spotlight, and partner shortlists.' }
+            ].map((item, index) => (
+              <div key={index} className="bg-white p-8 rounded-2xl shadow-lg text-center transition-all duration-500 hover:-translate-y-2 hover:shadow-xl">
+                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-teal-700">{item.step}</span>
+                </div>
+                <h3 className="text-xl font-semibold text-teal-800 mb-4">{item.title}</h3>
+                <p className="text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { number: '150+', label: 'Active Projects' },
+              { number: '₦2.5M+', label: 'Funding Distributed' },
+              { number: '40+', label: 'Partner Organizations' },
+              { number: '12', label: 'Universities' }
+            ].map((stat, index) => (
+              <div key={index} className="text-center p-6 bg-teal-50 rounded-xl hover:bg-teal-100 transition-colors">
+                <p className="text-4xl font-bold text-teal-700 mb-2">{stat.number}</p>
+                <p className="text-teal-600">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Final CTA */}
+      <section className="py-20 bg-teal-700 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold mb-6">Ready to showcase your innovation?</h2>
+          <p className="text-xl mb-10 max-w-2xl mx-auto">Join the university innovators' stage and get discovered by partners and alumni.</p>
+          
+          {user && authState === 'idle' ? (
+            <a 
+              href="/dashboard"
+              className="inline-block bg-white text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
+            >
+              Go to Dashboard →
+            </a>
+          ) : (
+            <button 
+              onClick={user ? () => router.push('/dashboard') : handleSignIn}
+              disabled={buttonState.disabled}
+              className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center mx-auto ${
+                buttonState.className.includes('bg-teal') ? 'bg-white text-teal-700 hover:bg-teal-50' : 
+                buttonState.className.includes('bg-green') ? 'bg-green-600 text-white' :
+                buttonState.className.includes('bg-red') ? 'bg-red-500 text-white hover:bg-red-600' :
+                'bg-gray-400 text-white cursor-wait'
+              }`}
+            >
+              {buttonState.showSpinner && <LoadingSpinner className="h-5 w-5 mr-3" />}
+              {user ? 'Go to Dashboard' : buttonState.text}
+            </button>
+          )}
+          
+          <div className="mt-4">
+            {authState === 'idle' && !user && (
+              <p className="text-teal-200 text-sm">Only verified university students — no forms, no waiting.</p>
+            )}
           </div>
         </div>
       </section>
       
       {/* Footer */}
-      <footer className="bg-[#001f3f] text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCI+CiAgPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIgZmlsbD0iI2ZmZiIvPgo8L3N2Zz4=')] bg-repeat"></div>
-        </div>
-        
-        <div className="container mx-auto px-6 py-16 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
-                  <svg className="text-blue-600" fill="none" height="32" viewBox="0 0 24 24" width="32" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-              </svg>  
-                </div>
-                <h2 className="text-2xl font-bold tracking-tighter">DeepLearn Points</h2>
+      <footer className="bg-teal-900 text-teal-100 py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 rounded-full bg-teal-700 flex items-center justify-center text-white font-bold text-xl">L</div>
+                <span className="ml-3 font-semibold text-white text-xl">Launch<span className="text-orange-500">pad</span></span>
               </div>
-              <p className="text-blue-200 mb-6 max-w-md">
-                Transform your knowledge into currency. Earn points by learning, apply skills to real-world challenges, and redeem exciting rewards.
-              </p>
-              <div className="flex gap-4">
-                {['twitter', 'facebook', 'instagram', 'linkedin'].map((social) => (
-                  <a key={social} href="#" className="w-10 h-10 rounded-full bg-blue-800/50 flex items-center justify-center hover:bg-blue-700 transition-colors">
-                    <div className="w-5 h-5 bg-blue-300 rounded-sm"></div>
-                  </a>
-                ))}
+              <p className="text-teal-300 mb-4">The premier platform for university innovators to showcase projects, find collaborators, and secure funding.</p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-teal-300 hover:text-white transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                  </svg>
+                </a>
+                <a href="#" className="text-teal-300 hover:text-white transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                  </svg>
+                </a>
+                <a href="#" className="text-teal-300 hover:text-white transition-colors">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                  </svg>
+                </a>
               </div>
             </div>
             
             <div>
-              <h3 className="text-lg font-bold mb-4">Quick Links</h3>
+              <h3 className="text-white text-lg font-semibold mb-4">Platform</h3>
               <ul className="space-y-2">
-                {['About Us', 'How It Works', 'Rewards', 'Blog', 'FAQ'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-blue-200 hover:text-white transition-colors">{item}</a>
-                  </li>
-                ))}
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">How it works</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Featured Projects</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Funding Opportunities</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Mentorship Program</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Success Stories</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-lg font-bold mb-4">Legal</h3>
+              <h3 className="text-white text-lg font-semibold mb-4">Resources</h3>
               <ul className="space-y-2">
-                {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Disclaimer'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-blue-200 hover:text-white transition-colors">{item}</a>
-                  </li>
-                ))}
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">API</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Community</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Support</a></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-white text-lg font-semibold mb-4">Company</h3>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Partners</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Contact</a></li>
+                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="pt-8 border-t border-blue-800/50 flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              <p className="text-sm text-blue-300">© 2025 DeepLearn Points. All rights reserved.</p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6">
-              <a className="text-sm text-blue-300 hover:text-white transition-colors" href="#">Privacy Policy</a>
-              <a className="text-sm text-blue-300 hover:text-white transition-colors" href="#">Terms of Service</a>
-              <a className="text-sm text-blue-300 hover:text-white transition-colors" href="#">Contact Us</a>
+          <div className="border-t border-teal-800 mt-12 pt-8 text-sm text-teal-400">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <p>&copy; 2025 Launchpad. All rights reserved.</p>
+              <div className="flex space-x-6 mt-4 md:mt-0">
+                <a href="#" className="text-teal-400 hover:text-white transition-colors">Terms of Service</a>
+                <a href="#" className="text-teal-400 hover:text-white transition-colors">Privacy Policy</a>
+                <a href="#" className="text-teal-400 hover:text-white transition-colors">Cookie Policy</a>
+              </div>
             </div>
           </div>
         </div>
       </footer>
-      
-      {/* Custom CSS for animations */}
-      <style jsx global>{`
-        @keyframes float {
-          0% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-          100% { transform: translateY(0px) rotate(0deg); }
-        }
-        
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 1s ease-out forwards;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out 0.3s forwards;
-          opacity: 0;
-        }
-      `}</style>
     </div>
   );
 }

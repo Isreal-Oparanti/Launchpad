@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@civic/auth": "^0.9.5",
     "@next/font": "^14.2.15",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
     "formidable": "^3.5.4",
+    "framer-motion": "^12.23.12",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.536.0",
     "mongodb": "^6.18.0",

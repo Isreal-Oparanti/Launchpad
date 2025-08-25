@@ -1,13 +1,12 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
-import { UserProvider } from '@/context/AuthContext.jsx';
 
+import { CivicAuthProvider } from "@civic/auth/nextjs";
 
 export default function Providers({ children }) {
   return (
-    <SessionProvider>
-      <UserProvider>{children}</UserProvider>
-    </SessionProvider>
+    <CivicAuthProvider>
+      {children}
+    </CivicAuthProvider>
   );
 }

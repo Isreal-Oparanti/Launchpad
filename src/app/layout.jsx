@@ -1,5 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import Providers from './providers'; // import the wrapper
+import Providers from './providers'; 
 import "./globals.css";
 import "./font.css";
 
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "DeepLearn",
-  description: "AI Learning Platform",
+  title: "Launchpad", // Updated to match your app
+  description: "The Student Modern Innovators' Park",
 };
 
 export default function RootLayout({ children }) {

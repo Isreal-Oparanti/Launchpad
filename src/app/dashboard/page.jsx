@@ -1,237 +1,252 @@
-"use client";
-import { useState, useEffect, useRef } from "react";
-import Chart from "chart.js/auto";
+// app/dashboard/page.jsx
+'use client';
+
+import { useUser } from '@civic/auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
 
 export default function Dashboard() {
-  const chartRef = useRef(null);
-  const chartInstanceRef = useRef(null);
-  
-  useEffect(() => {
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-      chartInstanceRef.current = null;
-    }
-    
-    if (chartRef.current) {
-      const ctx = chartRef.current.getContext("2d");
-      const newChart = new Chart(ctx, {
-        type: "radar",
-        data: {
-          labels: [
-            "Problem Solving",
-            "Critical Thinking", 
-            "Data Analysis",
-            "Communication",
-            "Project Management",
-            "UI/UX Design",
-          ],
-          datasets: [
-            {
-              label: "Skill Mastery",
-              data: [85, 70, 90, 75, 60, 80],
-              backgroundColor: "hsl(var(--primary) / 0.2)",
-              borderColor: "hsl(var(--primary))",
-              pointBackgroundColor: "hsl(var(--primary))",
-              pointBorderColor: "hsl(var(--background))",
-              pointHoverBackgroundColor: "hsl(var(--background))",
-              pointHoverBorderColor: "hsl(var(--primary))",
-            },
-          ],
-        },
-        options: {
-          maintainAspectRatio: false,
-          elements: {
-            line: {
-              borderWidth: 3,
-            },
-          },
-          scales: {
-            r: {
-              angleLines: {
-                display: false,
-              },
-              suggestedMin: 0,
-              suggestedMax: 100,
-              ticks: {
-                backdropColor: "transparent",
-                stepSize: 25,
-              },
-              pointLabels: {
-                font: {
-                  size: 12,
-                  family: "system-ui, sans-serif",
-                },
-              },
-            },
-          },
-          plugins: {
-            legend: {
-              display: false,
-            },
-          },
-        },
-      });
-      chartInstanceRef.current = newChart;
-    }
-   
-    return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-        chartInstanceRef.current = null;
+  const { user, isLoading } = useUser();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+const [trendingProjects, setTrendingProjects] = useState([
+      {
+        id: 1,
+        title: "Attendance AI",
+        creator: "Amina O.",
+        description: "Low-data app that auto-fills attendance using cheap beacons",
+        upvotes: 42,
+        tags: ["AI", "Education"],
+        stage: "Prototype",
+        collaborators: 2
+      },
+      {
+        id: 2,
+        title: "Waste2Fuel",
+        creator: "Chinedu M.",
+        description: "Community briquette from campus organic waste",
+        upvotes: 89,
+        tags: ["Sustainability", "Energy"],
+        stage: "Idea",
+        collaborators: 1
       }
-    };
-  }, []); 
+    ]);
+
+    const [opportunities, setOpportunities] = useState([
+      {
+        id: 1,
+        title: "Alumni Micro-Grant",
+        provider: "OAU Alumni Fund",
+        amount: "₦50,000",
+        deadline: "2025-09-10",
+        type: "Funding"
+      },
+      {
+        id: 2,
+        title: "TechCampus Hackathon",
+        provider: "Google for Startups",
+        prize: "₦200,000",
+        deadline: "2025-08-25",
+        type: "Competition"
+      }
+    ]);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/');
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-teal-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
-    
-      <Sidebar>
-        <div
-        className={`w-full min-h-screen p-8 bg-white/80 backdrop-blur-sm `}
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563EB' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          fontFamily: "'Lexend', 'Noto Sans', sans-serif",
-        }}
-      >
-      <div className="flex-1 overflow-y-auto">
-         
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column (2/3 width on large screens) */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Welcome Banner */}
-              <div className=" p-6 rounded-2xl flex items-center gap-6 shadow-sm border border-slate-200">
-                <div 
-                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-24 shrink-0" 
-                  style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCDvWPt7JrEkh0jPnYSj1eI910Xs-vJW8MxFTl-O7eiIOaEWTbrNcvu5hU7idcGClgCissYwn4-agUrArlYzYk4__dke6lCFjX0BMcz7MSpITyWtuL8WK0QpTjgw0NpT1d1Ji1Fewl0lu0CWWQNXqBqJdpgk5HbSThRrpHjjZxp8RkGo3EuY_IRNoaDsL85GDzMsUWSk_m9OPa_HzCPiag3npEaZcyIu2X5cWvu8WuLwAKbYRkjckB2BapMrXKo_xBoi3MLfy2gpU8')" }}
-                ></div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Welcome back, Isreal!</h2>
-                  <p className="text-gray-500">University of Lagos</p>
-                  <div className="mt-4 bg-[#4677b8]/10 p-4 rounded-xl">
-                    <p className="text-sm font-medium text-[#4677b8]">Total DeepLearn Points</p>
-                    <p className="text-3xl font-bold text-[#4677b8]">50</p>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white font-sans flex">
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab}
+        isMobileOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 lg:ml-0">
+        <Header 
+          onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          isSidebarOpen={isSidebarOpen}
+        />
+        
+        <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6">
+          {/* Welcome Section */}
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-teal-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="mb-4 sm:mb-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-teal-900 mb-1">
+                  Welcome back, {user?.name?.split(' ')[0] || 'Innovator'}! 👋
+                </h1>
+                <p className="text-teal-600 text-sm sm:text-base">Ready to build something amazing today?</p>
               </div>
-              
-              {/* Learning Progress */}
-              <div className="p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Learning Progress</h3>
-                <div className="flex items-end gap-2">
-                  <p className="text-4xl font-bold text-gray-900">75%</p>
-                  <div className="flex items-center text-[#07883b]">
-                    <svg fill="currentColor" height="20" viewBox="0 0 256 256" width="20" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,11.32-11.32L120,164.69V40a8,8,0,0,1,16,0V164.69l42.34-42.35a8,8,0,0,1,11.32,11.32Z" transform="scale(1, -1) translate(0, -256)"></path>
-                    </svg>
-                    <span className="text-base font-medium">+10%</span>
-                  </div>
-                  <p className="text-sm text-gray-500 ml-2">in the last 30 days</p>
+              <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center text-sm sm:text-base">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m极-6h6m-6 0H6" />
+                </svg>
+                Add Project
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              {/* Campus Spotlight Carousel */}
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-teal-100">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-bold text-teal-900">🔥 Campus Spotlight</h2>
+                  <span className="text-xs sm:text-sm text-orange-500 font-medium">Top Projects</span>
                 </div>
-                <div className="mt-4 h-48">
-                  <canvas ref={chartRef}></canvas>
-                </div>
-              </div>
-              
-              {/* Action Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <a 
-                  href="#" 
-                  className="bg-green-100/50 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border-2 border-dashed border-green-200 hover:border-green-400 transition-colors"
-                >
-                  <div className="p-3 bg-green-200 rounded-full mb-3">
-                    <svg className="text-green-700" fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="32" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" x2="12" y1="3" y2="15"></line>
-                    </svg>
-                  </div>
-                  <h4 className="font-bold text-green-800">Submit a Task</h4>
-                  <p className="text-sm text-green-700">Showcase your skills</p>
-                </a>
                 
-                <a 
-                  href="#" 
-                  className="bg-blue-100/50 p-6 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors"
-                >
-                  <div className="p-3 bg-blue-200 rounded-full mb-3">
-                    <svg className="text-blue-700" fill="none" height="32" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="32" xmlns="http://www.w3.org/2000/svg">
-                      <path d="m12 14 4-4"></path>
-                      <path d="m18 10-4 4"></path>
-                      <path d="M12 2a3.5 3.5 0 0 0-3.5 3.5v0a3.5 3.5 0 0 0 2 3.23"></path>
-                      <path d="M12 2a3.5 3.5 0 0 1 3.5 3.5v0a3.5 3.5 0 0 1-2 3.23"></path>
-                      <path d="M21 16V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2Z"></path>
-                      <path d="M12 18v2"></path>
-                      <path d="M6 18v2"></path>
-                      <path d="M18 18v2"></path>
-                    </svg>
-                  </div>
-                  <h4 className="font-bold text-blue-800">Chat with AI Tutor</h4>
-                  <p className="text-sm text-blue-700">Get instant help</p>
-                </a>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  {trendingProjects.slice(0, 2).map((project) => (
+                    <div key={project.id} className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-teal-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="bg-teal-600 text-white text-xs px-2 py-1 rounded-full">{project.stage}</span>
+                        <span className="flex items-center text-xs sm:text-sm text-teal-700">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {project.upvotes}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-base sm:text-lg text-teal-900 mb-2">{project.title}</h3>
+                      <p className="text-teal-600 text-xs sm:text-sm mb-3 sm:mb-4">{project.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-teal-200 rounded-full flex items-center justify-center text-xs font-medium text-teal-700 mr-2">
+                            {project.creator.charAt(0)}
+                          </div>
+                          <span className="text-xs sm:text-sm text-teal-700">{project.creator}</span>
+                        </div>
+                        <button className="text-teal-600 hover:text-teal-700 text-xs sm:text-sm font-medium">
+                          View →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trending Projects */}
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-teal-100">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-bold text-teal-900">🚀 Trending Projects</h2>
+                  <button className="text-teal-600 hover:text-teal-700 text-xs sm:text-sm font-medium">
+                    View All →
+                  </button>
+                </div>
+
+                <div className="space-y-3 sm:space-y-4">
+                  {trendingProjects.map((project) => (
+                    <div key={project.id} className="flex items-center p-3 sm:p-4 rounded-lg border border-teal-100 hover:border-teal-200 transition-colors">
+                      <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-teal-400 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                        {project.title.charAt(0)}
+                      </div>
+                      <div className="ml-3 sm:ml-4 flex-1">
+                        <h3 className="font-semibold text-teal-900 text-sm sm:text-base">{project.title}</h3>
+                        <p className="text-teal-600 text-xs sm:text-sm line-clamp-1">{project.description}</p>
+                        <div className="flex items-center mt-1 sm:mt-2 space-x-1 sm:space-x-2">
+                          {project.tags.slice(0, 2).map((tag) => (
+                            <span key={tag} className="bg-teal-100 text-teal-700 text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                              #{tag}
+                            </span>
+                          ))}
+                          {project.tags.length > 2 && (
+                            <span className="bg-teal-50 text-teal-500 text-xs px-1 sm:px-1.5 py-0.5 rounded">
+                              +{project.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="flex items-center text-xs sm:text-sm text-teal-700">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-极.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {project.upvotes}
+                        </span>
+                        <span className="text-xs text-teal-500">{project.collaborators} collab</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            
-            {/* Right Column (1/3 width on large screens) */}
-            <div className="lg:col-span-1 space-y-8">
-              {/* Recent Activity */}
-              <div className="p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center rounded-full bg-green-100 shrink-0 size-12 text-green-600">
-                      <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
-                      </svg>
+
+            {/* Sidebar Content */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Opportunities Panel */}
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-teal-100">
+                <h2 className="text-lg sm:text-xl font-bold text-teal-900 mb-3 sm:mb-4">💰 Opportunities</h2>
+                <div className="space-y-3 sm:space-y-4">
+                  {opportunities.map((opp) => (
+                    <div key={opp.id} className="p-3 sm:p-4 rounded-lg bg-teal-50 border border-teal-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-teal-900 text-sm sm:text-base">{opp.title}</h3>
+                        <span className="bg-teal-600 text-white text-xs px-2 py-0.5 sm:px-2 sm:py-1 rounded">
+                          {opp.type}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-teal-600 mb-2 sm:mb-3">By {opp.provider}</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm sm:text-base font-medium text-teal-700">{opp.amount || opp.prize}</span>
+                        <span className="text-xs text-teal-500">Deadline: {opp.deadline}</span>
+                      </div>
+                      <button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                        Apply Now
+                      </button>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Data Analysis Project</p>
-                      <p className="text-sm text-gray-500">Completed Task</p>
-                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border border-teal-100">
+                <h2 className="text-lg sm:text-xl font-bold text-teal-900 mb-3 sm:mb-4">📊 Your Impact</h2>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="text-center p-3 bg-teal-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-teal-700 mb-1">3</div>
+                    <div className="text-xs sm:text-sm text-teal-600">Projects</div>
                   </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center rounded-full bg-purple-100 shrink-0 size-12 text-purple-600">
-                      <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M200,48H136V16a8,8,0,0,0-16,0V48H56A32,32,0,0,0,24,80V192a32,32,0,0,0,32,32H200a32,32,0,0,0,32-32V80A32,32,0,0,0,200,48Zm16,144a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V80A16,16,0,0,1,56,64H200a16,16,0,0,1,16,16Zm-52-56H92a28,28,0,0,0,0,56h72a28,28,0,0,0,0-56Zm-28,16v24H120V152ZM80,164a12,12,0,0,1,12-12h12v24H92A12,12,0,0,1,80,164Zm84,12H152V152h12a12,12,0,0,1,0,24ZM72,108a12,12,0,1,1,12,12A12,12,0,0,1,72,108Zm88,0a12,12,0,1,1,12,12A12,12,0,0,1,160,108Z"></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Gift Card</p>
-                      <p className="text-sm text-gray-500">Redeemed Points</p>
-                    </div>
+                  <div className="text-center p-3 bg-teal-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-teal-700 mb-1">124</div>
+                    <div className="text-xs sm:text-sm text-teal-600">Sparks</div>
                   </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center rounded-full bg-yellow-100 shrink-0 size-12 text-yellow-600">
-                      <svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M184,89.57V84c0-25.08-37.83-44-88-44S8,58.92,8,84v40c0,20.89,26.25,37.49,64,42.46V172c0,25.08,37.83,44,88,44s88-18.92,88-44V132C248,111.3,222.58,94.68,184,89.57ZM232,132c0,13.22-30.79,28-72,28-3.73,0-7.43-.13-11.08-.37C170.49,151.77,184,139,184,124V105.74C213.87,110.19,232,122.27,232,132ZM72,150.25V126.46A183.74,183.74,0,0,0,96,128a183.74,183.74,0,0,0,24-1.54v23.79A163,163,0,0,1,96,152,163,163,0,0,1,72,150.25Zm96-40.32V124c0,8.39-12.41,17.4-32,22.87V123.5C148.91,120.37,159.84,115.71,168,109.93ZM96,56c41.21,0,72,14.78,72,28s-30.79,28-72,28S24,97.22,24,84,54.79,56,96,56ZM24,124V109.93c8.16,5.78,19.09,10.44,32,13.57v23.37C36.41,141.4,24,132.39,24,124Zm64,48v-4.17c2.63.1,5.29.17,8,.17,3.88,0,7.67-.13,11.39-.35A121.92,121.92,0,0,0,120,171.41v23.46C100.41,189.4,88,180.39,88,172Zm48,26.25V174.4a179.48,179.48,0,0,0,24,1.6,183.74,183.74,0,0,0,24-1.54v23.79a165.45,165.45,0,0,1-48,0Zm64-3.38V171.5c12.91-3.13,23.84-7.79,32-13.57V172C232,180.39,219.59,189.4,200,194.87Z"></path>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Problem Solving Challenge</p>
-                      <p className="text-sm text-gray-500">Earned Points</p>
-                    </div>
+                  <div className="text-center p-3 bg-teal-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-teal-700 mb-1">8</div>
+                    <div className="text-xs sm:text-sm text-teal-600">Collaborators</div>
+                  </div>
+                  <div className="text-center p-3 bg-teal-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-teal-700 mb-1">2</div>
+                    <div className="text-xs sm:text-sm text-teal-600">Badges</div>
                   </div>
                 </div>
-              </div>  
-              
-              {/* Inspiration Card */}
-              {/* <div 
-                className="p-6 rounded-2xl bg-cover bg-center min-h-[200px] flex items-end" 
-                style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5YI0mhD56v3Z3wiGtEM0OompiTY4tBKrZg0GzMQsR9BA09H_s3UPAZxjQS8ZcY7L19KwtiQFGWus_0wdgHYUS2HXb5xE-p9mWh_SL54M4AtmHAg6e00efaWoIYso4a0g8nQWtr_7RL4F1Tk46squZCdIiPNhq5u61eRJZB-WVjKY2xQb7T7Fbf2ZVvtPqbhbH3-BZeX3ozslXzhQ2HqQaUwDxEXQSQ8zjbu_Bwqkg6Ne_BhzVK742Qzt7Aqg8dhrdMcj5xhztEC4')" }}
-              >
-                <div className="bg-black/50 p-6 rounded-xl text-white w-full">
-                  <h3 className="font-bold text-lg">Nigerian Design Inspiration</h3>
-                  <p className="text-sm mt-1">This design subtly incorporates patterns and textures inspired by Nigerian art and textiles, creating a unique and culturally rich user experience.</p>
-                </div>
-              </div> */}
+              </div>
             </div>
           </div>
         </div>
       </div>
- 
-    </Sidebar>
+    </div>
   );
 }
