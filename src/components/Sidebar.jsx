@@ -104,10 +104,8 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         {/* Logo Section */}
         <div className="p-6 border-b border-teal-100">
           <div className="flex items-center">
-            {/* <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div> */}
-           <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight ">
-   <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
- </span>
+            <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div>
+            <span className="ml-3 font-semibold text-teal-700">Launch<span className="text-orange-500">pad</span></span>
           </div>
         </div>
       
@@ -178,12 +176,13 @@ export default function Sidebar({ activeTab, setActiveTab }) {
             <button
               key={item.id}
               onClick={() => handleNavigation(item)}
-              className={`flex flex-col items-center justify-center px-2 py-1 rounded-lg transition-colors ${
+              className={`flex flex-col items-center justify-center px-2 py-1 rounded-lg transition-colors relative ${
                 activeTab === item.id ? 'text-teal-600' : 'text-teal-500'
               }`}
             >
               {item.icon}
               <span className="text-xs mt-1">{item.label}</span>
+              {/* Only show notification badge on the notifications icon */}
               {item.id === 'notifications' && (
                 <span className="absolute top-1 right-4 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
               )}

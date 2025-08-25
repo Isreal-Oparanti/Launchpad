@@ -8,6 +8,7 @@ export default function Home() {
   const [currentFeature, setCurrentFeature] = useState(0);
   const [authState, setAuthState] = useState('idle'); // idle, signing-in, verifying, verified, error
   const [isMobile, setIsMobile] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   const { user, isLoading, signIn, signOut } = useUser();
   const router = useRouter();
@@ -37,23 +38,47 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [router]);
   
-  // Handle user state changes and routing
+  // Handle user state changes and routing - IMPROVED VERSION
   useEffect(() => {
+    // Only proceed if not already redirected
+    if (redirectAttempted) return;
+    
     if (isLoading) {
       setAuthState('verifying');
       return;
     }
-    if (user && authState !== 'verified') {
+    
+    // If user is authenticated and we haven't tried to redirect yet
+    if (user && !redirectAttempted) {
       setAuthState('verified');
-      // Immediate redirect without delay
-      setTimeout(() => router.push('/dashboard'), 100);
+      console.log("User authenticated, redirecting to dashboard...");
+      
+      // Mark that we're attempting a redirect to prevent multiple redirects
+      setRedirectAttempted(true);
+      
+      // Use window.location for a more reliable redirect
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500); // Increased delay to ensure state is fully updated
+      
       return;
     }
+    
     // Reset to idle if not loading and no user
     if (!isLoading && !user && authState !== 'idle' && authState !== 'error') {
       setAuthState('idle');
     }
-  }, [user, isLoading, router, authState]);
+  }, [user, isLoading, router, authState, redirectAttempted]);
+  
+  // Additional redirect check - this will catch cases where the above effect might miss
+  useEffect(() => {
+    // If user exists and we're on the home page, redirect to dashboard
+    if (user && !redirectAttempted && window.location.pathname === '/') {
+      console.log("Additional redirect check triggered");
+      setRedirectAttempted(true);
+      window.location.href = '/dashboard';
+    }
+  }, [user, redirectAttempted]);
   
   const features = [
     "Micro-grants available",
@@ -86,6 +111,7 @@ export default function Home() {
       console.log("Starting sign-out process");
       await signOut();
       setAuthState('idle');
+      setRedirectAttempted(false); // Reset redirect flag on sign out
       console.log("Sign-out completed successfully");
     } catch (error) {
       console.error('Sign out failed:', error);
@@ -152,6 +178,16 @@ export default function Home() {
     </svg>
   );
   
+  // Manual redirect handler for button clicks
+  const handleManualRedirect = () => {
+    if (user) {
+      console.log("Manual redirect triggered");
+      window.location.href = '/dashboard';
+    } else {
+      handleSignIn();
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 font-sans">
       {/* Loading Overlay */}
@@ -174,23 +210,22 @@ export default function Home() {
       )}
       
       {/* Header */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
-         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-           <div className="flex items-center">
-             {/* <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div> */}
-            <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight ">
-   <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
- </span>
-           </div>
-           <nav className="hidden md:flex space-x-8">
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">How it works</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Spotlight</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Opportunities</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">About</a>
-           </nav>
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight">
+              <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
+            </span>
+          </div>
+          <nav className="hidden md:flex space-x-8">
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">How it works</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Spotlight</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Opportunities</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">About</a>
+          </nav>
           
-           {/* Header Auth Button */}
-           {user && authState === 'idle' ? (
+          {/* Header Auth Button */}
+          {user && authState === 'idle' ? (
             <div className="flex items-center space-x-4">
               <span className="text-teal-700 font-medium">Hello, {user.name}!</span>
               <button 
@@ -202,9 +237,9 @@ export default function Home() {
             </div>
           ) : (
             <button 
-              onClick={user ? () => router.push('/dashboard') : handleSignIn}
+              onClick={handleManualRedirect} // Use the new handler
               disabled={buttonState.disabled}
-              className={`px-6 py-2 rounded-lg font-medium  cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center ${buttonState.className}`}
+              className={`px-6 py-2 rounded-lg font-medium cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center ${buttonState.className}`}
             >
               {buttonState.showSpinner && <LoadingSpinner className="h-4 w-4 mr-2" />}
               {buttonState.text}
@@ -212,7 +247,6 @@ export default function Home() {
           )}
         </div>
       </header>
-
       
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 overflow-hidden">
@@ -234,6 +268,10 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                   <a 
                     href="/dashboard"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleManualRedirect();
+                    }}
                     className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 text-center"
                   >
                     Go to Dashboard →
@@ -247,7 +285,7 @@ export default function Home() {
                 </div>
               ) : (
                 <button 
-                  onClick={user ? () => router.push('/dashboard') : handleSignIn}
+                  onClick={handleManualRedirect} // Use the new handler
                   disabled={buttonState.disabled}
                   className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center group ${buttonState.className}`}
                 >
@@ -323,7 +361,7 @@ export default function Home() {
                         <span className="mx-2">•</span>
                         <span className="flex items-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                           3 collaborators
                         </span>
@@ -350,20 +388,6 @@ export default function Home() {
         </div>
       </section>
       
-      {/* Trust Bar */}
-      {/* <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-teal-600 text-sm mb-8">Trusted by university alumni and partners</p>
-          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center">
-            {['Google for Startups', 'Microsoft Learn', 'Intel AI', 'AWS Educate', 'OAU Alumni Fund', 'TechCampus'].map((partner, index) => (
-              <div key={index} className="h-12 w-32 bg-teal-50 rounded-lg flex items-center justify-center font-bold text-teal-700 transition-all duration-300 hover:bg-teal-100 hover:shadow-md">
-                {partner}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-       */}
       {/* How It Works */}
       <section className="py-20 bg-gradient-to-b from-teal-50 to-teal-100">
         <div className="container mx-auto px-4">
@@ -416,13 +440,17 @@ export default function Home() {
           {user && authState === 'idle' ? (
             <a 
               href="/dashboard"
+              onClick={(e) => {
+                e.preventDefault();
+                handleManualRedirect();
+              }}
               className="inline-block bg-white text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
             >
               Go to Dashboard →
             </a>
           ) : (
             <button 
-              onClick={user ? () => router.push('/dashboard') : handleSignIn}
+              onClick={handleManualRedirect} // Use the new handler
               disabled={buttonState.disabled}
               className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center mx-auto ${
                 buttonState.className.includes('bg-teal') ? 'bg-white text-teal-700 hover:bg-teal-50' : 
