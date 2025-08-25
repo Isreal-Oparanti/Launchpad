@@ -84,7 +84,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white font-sans">
        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-             <div className="flex-1 ml-64">
+             <div className="md:ml-64  md:pt-0">
              <Header />
 
       <div className="container mx-auto px-4 py-8">

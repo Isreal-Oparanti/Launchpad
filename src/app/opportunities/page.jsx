@@ -142,7 +142,7 @@ export default function OpportunitiesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white font-sans">
      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-            <div className="flex-1 ml-64">
+            <div className="md:ml-64  md:pt-0">
             <Header />
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
@@ -151,12 +151,12 @@ export default function OpportunitiesPage() {
             <h1 className="text-3xl font-bold text-teal-900 mb-2">Opportunities</h1>
             <p className="text-teal-600">Find grants, internships, and programs to support your projects</p>
           </div>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold mt-4 md:mt-0 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center">
+          {/* <button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-semibold mt-4 md:mt-0 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Suggest an Opportunity
-          </button>
+          </button> */}
         </div>
 
         {/* Stats Overview */}

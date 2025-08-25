@@ -1,30 +1,28 @@
 // components/Header.jsx
 'use client';
-
 import { useUser } from '@civic/auth/react';
 
 export default function Header({ title = "Dashboard", subtitle = "Welcome back!" }) {
   const { user, signOut } = useUser();
-
+  
   return (
-    <header className="sticky top-0 z-40 bg-white/95  backdrop-blur-md shadow-sm border-b border-teal-100">
+    <header className="hidden md:block sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-teal-100">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Page Title */}
-         <div className="hidden md:flex items-center bg-teal-50 rounded-lg px-3 py-2 min-w-[300px]">
-              <svg className="w-4 h-4 text-teal-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Search projects, opportunities..." 
-                className="bg-transparent text-sm text-teal-700 placeholder-teal-400 flex-1 outline-none"
-              />
-            </div>
+          <div className="flex items-center bg-teal-50 rounded-lg px-3 py-2 min-w-[300px]">
+            <svg className="w-4 h-4 text-teal-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              type="text" 
+              placeholder="Search projects, opportunities..." 
+              className="bg-transparent text-sm text-teal-700 placeholder-teal-400 flex-1 outline-none"
+            />
+          </div>
+          
           {/* Header Actions */}
           <div className="flex items-center space-x-4">
-          
-
             {/* Notifications */}
             <button className="relative p-2 rounded-lg hover:bg-teal-50 transition-colors">
               <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,14 +30,13 @@ export default function Header({ title = "Dashboard", subtitle = "Welcome back!"
               </svg>
               <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
             </button>
-
+            
             {/* Messages */}
             <button className="p-2 rounded-lg hover:bg-teal-50 transition-colors">
               <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </button>
-
            
             {/* User Menu */}
             <div className="flex items-center space-x-3">
