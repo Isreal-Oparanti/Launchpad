@@ -104,8 +104,10 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         {/* Logo Section */}
         <div className="p-6 border-b border-teal-100">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div>
-            <span className="ml-3 font-semibold text-teal-700">Launch<span className="text-orange-500">pad</span></span>
+            {/* <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div> */}
+            <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight">
+              <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
+            </span>
           </div>
         </div>
       
