@@ -1,6 +1,4 @@
-# Launchpad Backend API
-
-A secure, efficient Node.js backend for the Launchpad student innovation platform. Features JWT authentication with httpOnly cookies, Google OAuth integration, and comprehensive user management.
+# Launchpad 
 
 ## 🚀 Features
 
