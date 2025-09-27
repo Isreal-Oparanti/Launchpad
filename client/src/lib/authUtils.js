@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '@/models/User';
+import User from '@/app/api/models/User';
 import { connectDB } from './db';
 
 const JWT_SECRET = process.env.JWT_SECRET;

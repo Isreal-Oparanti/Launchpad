@@ -13,7 +13,7 @@ const withCivicAuth = createCivicAuthPlugin({
     "/contact", 
     "/pricing",
     "/login",
-    "/signup",
+    "/register",
     "/public/*",
     "/_next/*",
     "/favicon.ico",

@@ -93,6 +93,11 @@ export default function Home() {
     }
   };
   
+  // Handle Get Started button click
+  const handleGetStarted = () => {
+    router.push('/register');
+  };
+  
   // Get button text and state based on auth state
   const getAuthButtonState = () => {
     switch (authState) {
@@ -174,23 +179,22 @@ export default function Home() {
       )}
       
       {/* Header */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
-         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-           <div className="flex items-center">
-             {/* <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-xl">L</div> */}
-            <span className="ml-3 font-extrabold text-teal-700 text-xl tracking-tight ">
-   <i>Launch</i><span className="text-orange-600 font-extrabold ">pad</span>
- </span>
-           </div>
-           <nav className="hidden md:flex space-x-8">
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">How it works</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Spotlight</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Opportunities</a>
-             <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">About</a>
-           </nav>
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="font-extrabold text-teal-700 text-xl tracking-tight">
+              <i>Launch</i><span className="text-orange-600 font-extrabold">pad</span>
+            </span>
+          </div>
+          <nav className="hidden md:flex space-x-8">
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">How it works</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Spotlight</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">Opportunities</a>
+            <a href="#" className="text-teal-700 hover:text-teal-500 font-medium transition-colors">About</a>
+          </nav>
           
-           {/* Header Auth Button */}
-           {user && authState === 'idle' ? (
+          {/* Header Auth Button */}
+          {user && authState === 'idle' ? (
             <div className="flex items-center space-x-4">
               <span className="text-teal-700 font-medium">Hello, {user.name}!</span>
               <button 
@@ -204,7 +208,7 @@ export default function Home() {
             <button 
               onClick={user ? () => router.push('/dashboard') : handleSignIn}
               disabled={buttonState.disabled}
-              className={`px-6 py-2 rounded-lg font-medium  cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center ${buttonState.className}`}
+              className={`px-6 py-2 rounded-lg font-medium cursor-pointer transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center ${buttonState.className}`}
             >
               {buttonState.showSpinner && <LoadingSpinner className="h-4 w-4 mr-2" />}
               {buttonState.text}
@@ -237,7 +241,9 @@ export default function Home() {
                     className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 text-center"
                   >
                     Go to Dashboard →
+                  
                   </a>
+                  
                   <button 
                     onClick={handleSignOut}
                     className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
@@ -247,27 +253,13 @@ export default function Home() {
                 </div>
               ) : (
                 <button 
-                  onClick={user ? () => router.push('/dashboard') : handleSignIn}
-                  disabled={buttonState.disabled}
-                  className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center group ${buttonState.className}`}
+                  onClick={handleGetStarted}
+                  className="px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center group bg-teal-600 hover:bg-teal-700 text-white"
                 >
-                  {buttonState.showSpinner ? (
-                    <>
-                      <LoadingSpinner className="h-5 w-5 mr-3" />
-                      <span>{buttonState.text}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="mr-2 group-hover:scale-110 transition-transform">
-                        {buttonState.text}
-                      </span>
-                      {!user && authState === 'idle' && (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                      )}
-                    </>
-                  )}
+                  <span className="mr-2 group-hover:scale-110 transition-transform">
+                    Get Started
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>      
                 </button>
               )}
               
@@ -323,7 +315,7 @@ export default function Home() {
                         <span className="mx-2">•</span>
                         <span className="flex items-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                           3 collaborators
                         </span>
@@ -351,7 +343,7 @@ export default function Home() {
       </section>
       
       {/* Trust Bar */}
-      {/* <section className="py-12 bg-white">
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
           <p className="text-center text-teal-600 text-sm mb-8">Trusted by university alumni and partners</p>
           <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center">
@@ -363,7 +355,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-       */}
+      
       {/* How It Works */}
       <section className="py-20 bg-gradient-to-b from-teal-50 to-teal-100">
         <div className="container mx-auto px-4">
@@ -419,21 +411,16 @@ export default function Home() {
               className="inline-block bg-white text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
             >
               Go to Dashboard →
+            
             </a>
           ) : (
             <button 
-              onClick={user ? () => router.push('/dashboard') : handleSignIn}
-              disabled={buttonState.disabled}
-              className={`px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center mx-auto ${
-                buttonState.className.includes('bg-teal') ? 'bg-white text-teal-700 hover:bg-teal-50' : 
-                buttonState.className.includes('bg-green') ? 'bg-green-600 text-white' :
-                buttonState.className.includes('bg-red') ? 'bg-red-500 text-white hover:bg-red-600' :
-                'bg-gray-400 text-white cursor-wait'
-              }`}
+              onClick={handleGetStarted}
+              className="px-8 py-4 rounded-lg font-semibold text-lg shadow-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center mx-auto bg-white text-teal-700 hover:bg-teal-50"
             >
-              {buttonState.showSpinner && <LoadingSpinner className="h-5 w-5 mr-3" />}
-              {user ? 'Go to Dashboard' : buttonState.text}
+              Get Started 
             </button>
+
           )}
           
           <div className="mt-4">
@@ -450,8 +437,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-teal-700 flex items-center justify-center text-white font-bold text-xl">L</div>
-                <span className="ml-3 font-semibold text-white text-xl">Launch<span className="text-orange-500">pad</span></span>
+                <span className="font-semibold text-white text-xl">Launch<span className="text-orange-500">pad</span></span>
               </div>
               <p className="text-teal-300 mb-4">The premier platform for university innovators to showcase projects, find collaborators, and secure funding.</p>
               <div className="flex space-x-4">
