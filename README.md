@@ -19,8 +19,8 @@
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone <your-repo-url>
-cd launchpad-backend
+git clone repo-url
+cd server
 npm install
 ```
 
