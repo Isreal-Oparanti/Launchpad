@@ -160,7 +160,6 @@ class AuthController {
     }
   }
 
- 
   async refreshToken(req, res) {
     try {
       const refreshToken = req.cookies.refreshToken;
@@ -201,4 +200,90 @@ class AuthController {
       });
     }
   }
+
+  async logout(req, res) {
+    try {
+      jwtUtils.clearAuthCookies(res);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Logout successful'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Logout failed'
+      });
+    }
+  }
+
+  async getProfile(req, res) {
+    try {
+      res.status(200).json({
+        success: true,
+        user: req.user
+      });
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get profile'
+      });
+    }
+  }
+
+  async updateProfile(req, res) {
+    try {
+      const { fullName, school, major, profilePicture } = req.body;
+      const user = await User.findById(req.user.id);
+
+      if (fullName) user.fullName = fullName;
+      if (school) user.school = school;
+      if (major) user.major = major;
+      if (profilePicture) user.profilePicture = profilePicture;
+
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        user: {
+          id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          school: user.school,
+          major: user.major,
+          profilePicture: user.profilePicture,
+          isEmailVerified: user.isEmailVerified,
+          profileCompleted: user.profileCompleted,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update profile'
+      });
+    }
+  }
+
+  async checkAuth(req, res) {
+    try {
+      res.status(200).json({
+        success: true,
+        authenticated: true,
+        user: req.user
+      });
+    } catch (error) {
+      console.error('Check auth error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Authentication check failed'
+      });
+    }
+  }
 }
+
+module.exports = AuthController;

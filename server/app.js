@@ -11,6 +11,8 @@ require('dotenv').config();
 
 const app = express();
 
+const authRoutes = require('./routes/authRoutes');
+
 const connectDatabase = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad';
@@ -139,7 +141,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-
+// API routes
+app.use('/api/auth', authRoutes);
 
 
 
