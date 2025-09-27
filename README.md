@@ -416,55 +416,6 @@ USER node
 CMD ["npm", "start"]
 ```
 
-### Performance Optimization
-
-The backend includes several optimizations:
-
-1. **Database Indexing**: Strategic indexes on frequently queried fields
-2. **Connection Pooling**: MongoDB connection pool configuration
-3. **Compression**: Gzip compression for responses
-4. **Caching**: Efficient JWT verification and user loading
-5. **Rate Limiting**: Prevent abuse and DoS attacks
-
-## 🛡️ Security Considerations
-
-### Production Checklist
-
-- [ ] Use strong, unique JWT secrets (64+ characters)
-- [ ] Enable HTTPS only in production
-- [ ] Configure proper CORS origins
-- [ ] Set secure cookie flags
-- [ ] Enable MongoDB authentication
-- [ ] Use environment variables for secrets
-- [ ] Implement proper logging and monitoring
-- [ ] Regular security updates
-- [ ] Rate limiting and DDoS protection
-- [ ] Input validation and sanitization
-
-## 📞 Support & Troubleshooting
-
-### Common Issues
-
-**"CORS Error"**: Check `ALLOWED_ORIGINS` in environment variables
-
-**"JWT Secret Error"**: Ensure JWT secrets are set in environment
-
-**"MongoDB Connection Failed"**: Verify `MONGODB_URI` and MongoDB status
-
-**"Google OAuth Failed"**: Check Google Cloud Console configuration
-
-### Debug Mode
-
-Enable detailed logging:
-
-```bash
-NODE_ENV=development DEBUG=* npm run dev
-```
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
-
 ---
 
 This backend provides a solid foundation for your Launchpad platform with security, scalability, and maintainability built in from the start.
