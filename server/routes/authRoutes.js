@@ -11,8 +11,11 @@ const authController = new AuthController();
 
 const loginRateLimit = createAuthRateLimit(15 * 60 * 1000, 5);
 const registerRateLimit = createAuthRateLimit(60 * 60 * 1000, 3);
+const verifyRateLimit = createAuthRateLimit(15 * 60 * 1000, 5);
 
 router.post('/register', registerRateLimit, authController.register.bind(authController));
+router.post('/verify-email', verifyRateLimit, authController.verifyEmail.bind(authController));
+router.post('/resend-verification', verifyRateLimit, authController.resendVerificationCode.bind(authController));
 router.post('/login', loginRateLimit, authController.login.bind(authController));
 router.post('/refresh', authController.refreshToken.bind(authController));
 router.post('/logout', optionalAuth, authController.logout.bind(authController));

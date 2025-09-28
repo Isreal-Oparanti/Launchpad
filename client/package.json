@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@civic/auth": "^0.9.5",
     "@next/font": "^14.2.15",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",

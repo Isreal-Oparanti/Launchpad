@@ -1,15 +1,13 @@
-// components/Header.jsx
 'use client';
-import { useUser } from '@civic/auth/react';
+import { useUser } from '@/context/AuthContext';
 
 export default function Header({ title = "Dashboard", subtitle = "Welcome back!" }) {
-  const { user, signOut } = useUser();
+  const { user, logout } = useUser();
   
   return (
     <header className="hidden md:block sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-teal-100">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Page Title */}
           <div className="flex items-center bg-teal-50 rounded-lg px-3 py-2 min-w-[300px]">
             <svg className="w-4 h-4 text-teal-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -41,17 +39,21 @@ export default function Header({ title = "Dashboard", subtitle = "Welcome back!"
             {/* User Menu */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {user?.name?.charAt(0) || 'U'}
+                {user?.fullName?.charAt(0) || 'U'}
               </div>
               <div className="hidden lg:block">
-                <p className="text-sm font-medium text-teal-900">{user?.name || 'User'}</p>
+                <p className="text-sm font-medium text-teal-900">{user?.fullName || 'User'}</p>
                 <p className="text-xs text-teal-500">Student</p>
               </div>
               
               {/* Dropdown Arrow */}
-              <button className="p-1 rounded hover:bg-teal-50 transition-colors">
+              <button 
+                onClick={logout}
+                className="p-1 rounded hover:bg-teal-50 transition-colors"
+                title="Sign out"
+              >
                 <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>
             </div>

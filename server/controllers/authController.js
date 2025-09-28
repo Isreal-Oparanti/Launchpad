@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { jwtUtils } = require('../utils/jwt');
+const emailService = require('../utils/email');
 const validator = require('validator');
 
 class AuthController {
@@ -52,27 +53,39 @@ class AuthController {
       };
 
       const user = await User.createUser(userData);
-      const tokens = jwtUtils.generateTokens(user);
-      jwtUtils.setAuthCookies(res, tokens);
+      
+      // Generate and send verification code
+      const verificationCode = user.generateVerificationCode();
+      await user.save();
+      
+      const emailSent = await emailService.sendVerificationCode(
+        user.email, 
+        verificationCode, 
+        user.fullName
+      );
+
+      if (!emailSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email. Please try again.'
+        });
+      }
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
+        message: 'Registration successful. Check your email for verification code.',
         user: {
           id: user._id,
           email: user.email,
           fullName: user.fullName,
           school: user.school,
           major: user.major,
-          profilePicture: user.profilePicture,
           isEmailVerified: user.isEmailVerified,
           profileCompleted: user.profileCompleted,
           role: user.role,
           createdAt: user.createdAt
         },
-        tokens: {
-          accessToken: tokens.accessToken,
-        }
+        requiresVerification: true
       });
 
     } catch (error) {
@@ -89,6 +102,134 @@ class AuthController {
         success: false,
         message: 'Registration failed. Please try again.',
         ...(process.env.NODE_ENV === 'development' && { error: error.message })
+      });
+    }
+  }
+
+  async verifyEmail(req, res) {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email and verification code are required'
+        });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase().trim() })
+        .select('+emailVerificationCode +emailVerificationCodeExpires');
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (user.isEmailVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already verified'
+        });
+      }
+
+      const isValid = user.verifyEmailCode(code);
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired verification code'
+        });
+      }
+
+      await user.save();
+
+      // Generate tokens after successful verification
+      const tokens = jwtUtils.generateTokens(user);
+      jwtUtils.setAuthCookies(res, tokens);
+
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully',
+        user: {
+          id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          school: user.school,
+          major: user.major,
+          isEmailVerified: user.isEmailVerified,
+          profileCompleted: user.profileCompleted,
+          role: user.role
+        },
+        tokens: {
+          accessToken: tokens.accessToken,
+        }
+      });
+
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Email verification failed',
+        ...(process.env.NODE_ENV === 'development' && { error: error.message })
+      });
+    }
+  }
+
+  async resendVerificationCode(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+      }
+
+      const user = await User.findOne({ email: email.toLowerCase().trim() })
+        .select('+emailVerificationCode +emailVerificationCodeExpires');
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      if (user.isEmailVerified) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already verified'
+        });
+      }
+
+      const verificationCode = user.generateVerificationCode();
+      await user.save();
+
+      const emailSent = await emailService.sendVerificationCode(
+        user.email, 
+        verificationCode, 
+        user.fullName
+      );
+
+      if (!emailSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent successfully'
+      });
+
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to resend verification code'
       });
     }
   }
@@ -112,6 +253,16 @@ class AuthController {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password'
+        });
+      }
+
+      // Check if email is verified
+      if (!user.isEmailVerified) {
+        return res.status(403).json({
+          success: false,
+          message: 'Please verify your email before logging in',
+          code: 'EMAIL_NOT_VERIFIED',
+          requiresVerification: true
         });
       }
 

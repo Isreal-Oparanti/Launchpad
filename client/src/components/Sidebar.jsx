@@ -1,10 +1,9 @@
-// components/Sidebar.jsx
 'use client';
-import { useUser } from '@civic/auth/react';
+import { useUser } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
-  const { user, signOut } = useUser();
+  const { user, logout } = useUser();
   const router = useRouter();
   
   const navigationItems = [
@@ -160,7 +159,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         {/* Sign Out Section */}
         <div className="p-4 border-t border-teal-100">
           <button
-            onClick={() => signOut()}
+            onClick={() => logout()}
             className="w-full cursor-pointer flex items-center justify-center px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

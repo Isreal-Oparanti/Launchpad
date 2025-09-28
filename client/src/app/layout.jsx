@@ -1,8 +1,7 @@
-// app/layout.js
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'; 
-import Script from 'next/script'
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -15,12 +14,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Civic Auth Script */}
-        <Script
-          src="https://auth.civic.com/js/civic.siww.js"
-          strategy="beforeInteractive"
-          id="civic-script"
-        />
+     
+        
       </head>
       <body className={inter.className}>
         <Providers>

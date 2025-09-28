@@ -15,8 +15,7 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
-    index: true
+    validate: [validator.isEmail, 'Please provide a valid email']
   },
   
   password: {
@@ -30,8 +29,7 @@ const userSchema = new mongoose.Schema({
   
   googleId: {
     type: String,
-    sparse: true,
-    index: true
+    sparse: true
   },
   
   profilePicture: {
@@ -56,12 +54,12 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   
-  emailVerificationToken: {
+  emailVerificationCode: {
     type: String,
     select: false
   },
   
-  emailVerificationExpires: {
+  emailVerificationCodeExpires: {
     type: Date,
     select: false
   },
@@ -106,8 +104,8 @@ const userSchema = new mongoose.Schema({
     virtuals: true,
     transform: function(doc, ret) {
       delete ret.password;
-      delete ret.emailVerificationToken;
-      delete ret.emailVerificationExpires;
+      delete ret.emailVerificationCode;
+      delete ret.emailVerificationCodeExpires;
       delete ret.passwordResetToken;
       delete ret.passwordResetExpires;
       delete ret.__v;
@@ -156,6 +154,26 @@ userSchema.pre('save', function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.generateVerificationCode = function() {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  this.emailVerificationCode = code;
+  this.emailVerificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  return code;
+};
+
+userSchema.methods.verifyEmailCode = function(code) {
+  if (this.emailVerificationCode !== code) {
+    return false;
+  }
+  if (this.emailVerificationCodeExpires < Date.now()) {
+    return false;
+  }
+  this.isEmailVerified = true;
+  this.emailVerificationCode = undefined;
+  this.emailVerificationCodeExpires = undefined;
+  return true;
 };
 
 userSchema.statics.findByEmailOrGoogle = function(email, googleId = null) {

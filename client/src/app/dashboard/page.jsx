@@ -1,17 +1,15 @@
-// app/dashboard/page.jsx
 'use client';
-import { useUser } from '@civic/auth/react';
+import { useUser } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 
 export default function Dashboard() {
-  const { user, isLoading, signIn, signOut } = useUser();
+  const { user, loading, logout } = useUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  // Sample data - would come from your backend
   const [trendingProjects, setTrendingProjects] = useState([
     {
       id: 1,
@@ -55,12 +53,12 @@ export default function Dashboard() {
   ]);
   
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/');
+    if (!loading && !user) {
+      router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, loading, router]);
   
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-teal-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
@@ -85,7 +83,7 @@ export default function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-teal-900 mb-2">
-                  Welcome back, {user?.name?.split(' ')[0] || 'Innovator'}! 👋
+                  Welcome back, {user?.fullName?.split(' ')[0] || 'Innovator'}! 👋
                 </h1>
                 <p className="text-teal-600">Ready to build something amazing today?</p>
               </div>

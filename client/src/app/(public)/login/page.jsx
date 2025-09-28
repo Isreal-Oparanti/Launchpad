@@ -1,9 +1,8 @@
-// app/login/page.js
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@civic/auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authService } from '../../../utils/auth';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -11,13 +10,12 @@ export default function LoginPage() {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [authState, setAuthState] = useState('idle'); // idle, signing-in, verifying, verified, error
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [isMobile, setIsMobile] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const timeoutRef = useRef(null);
 
-  const { user, isLoading, signIn, signOut } = useUser();
   const router = useRouter();
 
   // Detect mobile screens
@@ -30,24 +28,6 @@ export default function LoginPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  // Handle user state changes and routing
-  useEffect(() => {
-    if (isLoading) {
-      setAuthState('verifying');
-      return;
-    }
-    if (user && authState !== 'verified') {
-      setAuthState('verified');
-      // Immediate redirect without delay
-      setTimeout(() => router.push('/dashboard'), 100);
-      return;
-    }
-    // Reset to idle if not loading and no user
-    if (!isLoading && !user && authState !== 'idle' && authState !== 'error') {
-      setAuthState('idle');
-    }
-  }, [user, isLoading, router, authState]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -93,161 +73,36 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Update the handleSubmit function
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  // Updated handleSubmit function
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setAuthState('signing-in');
-  setErrors({});
+    setIsSubmitting(true);
+    setErrors({});
 
-  try {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
-    }
-
-    // Use the login function from AuthContext to set user and token
-    await login(data.user, data.token);
-
-    setLoginSuccess(true);
-    
-    // Set timeout to redirect to dashboard after showing success message
-    timeoutRef.current = setTimeout(() => {
-      setLoginSuccess(false);
-      router.push('/dashboard');
-    }, 2000);
-
-  } catch (error) {
-    console.error('Login failed:', error);
-    setAuthState('error');
-    setErrors({ general: error.message || 'Login failed. Please try again.' });
-  } finally {
-    setAuthState('idle');
-  }
-};
-  // Enhanced sign-in handler for Civic
-  // Update the handleCivicSignIn function
-const handleCivicSignIn = async () => {
-  try {
-    setAuthState('signing-in');
-    console.log("Starting Civic sign-in process");
-    
-    // Check if Civic is available
-    if (typeof window === 'undefined' || !window.civic) {
-      throw new Error('Civic is not available. Please ensure the Civic script is loaded.');
-    }
-
-    // Initialize Civic Auth
-    const civic = new window.civic.siww({
-      appId: process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID,
-    });
-
-    const civicData = await civic.login();
-
-    // Send Civic data to our backend
-    const response = await fetch('/api/auth/civic', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(civicData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Civic authentication failed');
-    }
-
-    // Use the login function from AuthContext to set user and token
-    await login(data.user, data.token);
-
-    console.log("Civic sign-in completed successfully");
-  } catch (error) {
-    console.error('Civic sign in failed:', error);
-    setAuthState('error');
-    
-    // Reset to idle after showing error
-    setTimeout(() => {
-      setAuthState('idle');
-    }, 3000);
-  }
-};
-  // Sign-out handler
-  const handleSignOut = async () => {
     try {
-      console.log("Starting sign-out process");
-      await signOut();
-      setAuthState('idle');
-      console.log("Sign-out completed successfully");
+      // Use authService to call the backend
+      const data = await authService.login(formData);
+      
+      // Handle successful login
+      setLoginSuccess(true);
+      
+      // Set timeout to redirect to dashboard after showing success message
+      timeoutRef.current = setTimeout(() => {
+        setLoginSuccess(false);
+        router.push('/dashboard');
+      }, 2000);
+
     } catch (error) {
-      console.error('Sign out failed:', error);
-      setAuthState('error');
+      console.error('Login failed:', error);
+      setErrors({ general: error.message || 'Login failed. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Get button text and state based on auth state
-  const getCivicButtonState = () => {
-    switch (authState) {
-      case 'signing-in':
-        return {
-          text: 'Opening Civic...',
-          disabled: true,
-          className: 'bg-gray-300 text-gray-500 cursor-wait',
-          showSpinner: true
-        };
-      case 'verifying':
-        return {
-          text: 'Verifying...',
-          disabled: true,
-          className: 'bg-gray-300 text-gray-500 cursor-wait',
-          showSpinner: true
-        };
-      case 'verified':
-        return {
-          text: 'Redirecting...',
-          disabled: true,
-          className: 'bg-green-600 text-white cursor-wait',
-          showSpinner: true
-        };
-      case 'error':
-        return {
-          text: 'Authentication Failed - Retry',
-          disabled: false,
-          className: 'bg-red-500 hover:bg-red-600 text-white',
-          showSpinner: false
-        };
-      default:
-        if (user) {
-          return {
-            text: 'Go to Dashboard',
-            disabled: false,
-            className: 'bg-teal-600 hover:bg-teal-700 text-white',
-            showSpinner: false
-          };
-        }
-        return {
-          text: 'Continue with Civic',
-          disabled: false,
-          className: 'bg-white border border-teal-300 text-gray-700 hover:bg-gray-50',
-          showSpinner: false
-        };
-    }
-  };
-
-  const civicButtonState = getCivicButtonState();
-  
   // Loading spinner component
   const LoadingSpinner = ({ className = "h-5 w-5" }) => (
     <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -255,14 +110,6 @@ const handleCivicSignIn = async () => {
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
   );
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
@@ -426,25 +273,6 @@ const handleCivicSignIn = async () => {
               )}
             </AnimatePresence>
 
-            {/* Civic Auth Loading Overlay */}
-            {(authState === 'signing-in' || authState === 'verifying' || authState === 'verified') && (
-              <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm mx-4">
-                  <LoadingSpinner className="h-12 w-12 mx-auto mb-4 text-teal-600" />
-                  <p className="text-teal-700 font-medium text-lg mb-2">
-                    {authState === 'signing-in' && 'Opening Civic...'}
-                    {authState === 'verifying' && 'Verifying credentials...'}
-                    {authState === 'verified' && 'Success! Redirecting...'}
-                  </p>
-                  <p className="text-sm text-teal-500">
-                    {authState === 'signing-in' && 'Complete authentication in the popup window'}
-                    {authState === 'verifying' && 'Checking your university credentials'}
-                    {authState === 'verified' && 'Taking you to your dashboard'}
-                  </p>
-                </div>
-              </div>
-            )}
-
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -531,10 +359,10 @@ const handleCivicSignIn = async () => {
 
               <button
                 type="submit"
-                disabled={authState === 'signing-in'}
+                disabled={isSubmitting}
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                {authState === 'signing-in' ? (
+                {isSubmitting ? (
                   <>
                     <LoadingSpinner className="h-5 w-5 mr-3" />
                     Signing in...
@@ -544,24 +372,6 @@ const handleCivicSignIn = async () => {
                 )}
               </button>
             </form>
-
-            <div className="my-5 flex items-center">
-              <div className="flex-grow border-t border-teal-200"></div>
-              <span className="mx-4 text-teal-600 text-sm">Or continue with</span>
-              <div className="flex-grow border-t border-teal-200"></div>
-            </div>
-
-            <button
-              onClick={handleCivicSignIn}
-              disabled={civicButtonState.disabled}
-              className={`w-full font-medium py-3 px-4 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center ${civicButtonState.className}`}
-            >
-              {civicButtonState.showSpinner && <LoadingSpinner className="h-5 w-5 mr-2" />}
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989,4.785 1.849l3.254-3.138C18.189 1.186,15.479 0,12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z" fill="#4285F4"/>
-              </svg>
-              {civicButtonState.text}
-            </button>
 
             <div className="mt-5 text-center">
               <p className="text-teal-700 text-sm">

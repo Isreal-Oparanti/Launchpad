@@ -18,17 +18,13 @@ const connectDatabase = async () => {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad';
     
     await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10, 
       serverSelectionTimeoutMS: 5000, 
       socketTimeoutMS: 45000,
-      bufferCommands: false,
     });
 
     console.log('Connected to MongoDB successfully');
     
-    // Handle connection events
     mongoose.connection.on('error', (error) => {
       console.error('MongoDB connection error:', error);
     });
