@@ -16,7 +16,7 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  // Detect mobile screens
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -25,7 +25,7 @@ export default function Home() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Scroll detection for header
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
@@ -39,14 +39,13 @@ export default function Home() {
   }, []);
   
   useEffect(() => {
-    setIsVisible(true);
-    
+    setIsVisible(true); 
     // Preload important pages for faster navigation
     router.prefetch('/register');
     router.prefetch('/login');
     router.prefetch('/dashboard');
     
-    // Rotate features every 3 seconds
+    
     const interval = setInterval(() => {
       setCurrentFeature(prev => (prev + 1) % 3);
     }, 3000);
@@ -60,12 +59,11 @@ export default function Home() {
     { text: "Real Opportunities", color: "from-green-400 to-green-500" }
   ];
   
-  // Smooth navigation with loading state
+  
   const handleNavigation = (path) => {
     router.push(path);
   };
   
-  // Enhanced Get Started button with ripple effect
   const createRipple = (event) => {
     const button = event.currentTarget;
     const circle = document.createElement("span");
@@ -85,7 +83,7 @@ export default function Home() {
     button.appendChild(circle);
   };
   
-  // Floating animation variants
+  
   const floatingAnimation = {
     animate: {
       y: [0, -15, 0],
@@ -108,7 +106,7 @@ export default function Home() {
     }
   };
   
-  // Stagger animation for cards
+  
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -131,16 +129,16 @@ export default function Home() {
     }
   };
 
-  // Simple Logo Component
+  
   const LaunchpadLogo = ({ size = "normal" }) => (
     <div className="flex items-center space-x-2 cursor-pointer">
-      <span className={`font-poppins font-bold text-teal-900 ${size === "large" ? "text-3xl" : "text-xl"}`}>
+      <span className={`font-poppins font-bold text-teal-900 ${size === "large" ? "text-5xl" : "text-xl"}`}>
         Launch<span className="text-orange-500">pad</span>
       </span>
     </div>
   );
 
-  // Icon Components
+  
   const MicroGrantIcon = () => (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -211,7 +209,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-50 to-teal-100 font-sans overflow-x-hidden">
-      {/* Animated Background Elements */}
+    
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           className="absolute top-1/4 left-1/4 w-64 h-64 bg-teal-200 rounded-full opacity-20 blur-xl"
