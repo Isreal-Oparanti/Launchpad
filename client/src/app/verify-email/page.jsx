@@ -11,36 +11,18 @@ function VerifyEmailContent() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [countdown, setCountdown] = useState(0);
-  const [email, setEmail] = useState('');
 
   const searchParams = useSearchParams();
   const router = useRouter();
+  
+  const email = searchParams.get('email');
 
-  // Get email from URL params or localStorage on mount
+  // Redirect if no email provided
   useEffect(() => {
-    const emailParam = searchParams.get('email');
-    
-    if (emailParam) {
-      setEmail(emailParam);
-      // Store in sessionStorage as backup
-      sessionStorage.setItem('verifyEmail', emailParam);
-    } else {
-      // Try sessionStorage first, then localStorage
-      const storedEmail = sessionStorage.getItem('verifyEmail') || 
-                         (typeof window !== 'undefined' ? localStorage.getItem('registrationEmail') : null);
-      
-      if (storedEmail) {
-        setEmail(storedEmail);
-        // Clean up localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('registrationEmail');
-        }
-      } else {
-        // No email found, redirect to register
-        router.push('/register');
-      }
+    if (!email) {
+      router.push('/register');
     }
-  }, [searchParams, router]);
+  }, [email, router]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -80,9 +62,6 @@ function VerifyEmailContent() {
         code: verificationCode,
       });
       setMessage('Email verified successfully! Redirecting to login...');
-      
-      // Clean up storage
-      sessionStorage.removeItem('verifyEmail');
       
       setTimeout(() => {
         router.push('/login?verified=true');
@@ -132,7 +111,7 @@ function VerifyEmailContent() {
     </svg>
   );
 
-  // Show loading state while email is being retrieved
+  // Show loading state while checking for email
   if (!email) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
@@ -172,9 +151,9 @@ function VerifyEmailContent() {
             <h1 className="text-2xl font-bold text-teal-900 mb-2">
               Verify Your Email
             </h1>
-            <p className="text-teal-600">
+            <p className="text-teal-600 text-sm md:text-base px-2">
               We sent a 6-digit code to{' '}
-              <span className="font-semibold">{email}</span>
+              <span className="font-semibold break-all">{email}</span>
             </p>
           </div>
 
@@ -184,11 +163,11 @@ function VerifyEmailContent() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 flex items-center"
+                className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 flex items-start"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2 flex-shrink-0"
+                  className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -207,11 +186,11 @@ function VerifyEmailContent() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 flex items-center"
+                className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 flex items-start"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2 flex-shrink-0"
+                  className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -277,7 +256,7 @@ function VerifyEmailContent() {
             <button
               onClick={handleResendCode}
               disabled={loading || countdown > 0}
-              className="text-teal-600 hover:text-teal-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="text-teal-600 hover:text-teal-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               {countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
             </button>
