@@ -1,41 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../../utils/auth';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Get email from URL params or localStorage on mount
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isMounted) return;
     const emailParam = searchParams.get('email');
+    
     if (emailParam) {
       setEmail(emailParam);
+      // Store in sessionStorage as backup
+      sessionStorage.setItem('verifyEmail', emailParam);
     } else {
-      const storedEmail = localStorage.getItem('registrationEmail');
+      // Try sessionStorage first, then localStorage
+      const storedEmail = sessionStorage.getItem('verifyEmail') || 
+                         (typeof window !== 'undefined' ? localStorage.getItem('registrationEmail') : null);
+      
       if (storedEmail) {
         setEmail(storedEmail);
-        localStorage.removeItem('registrationEmail');
+        // Clean up localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('registrationEmail');
+        }
       } else {
+        // No email found, redirect to register
         router.push('/register');
       }
     }
-  }, [searchParams, isMounted, router]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -50,13 +55,13 @@ export default function VerifyEmailPage() {
     newCode[index] = value;
     setCode(newCode);
     if (value && index < 5) {
-      document.getElementById(`code-${index + 1}`).focus();
+      document.getElementById(`code-${index + 1}`)?.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
-      document.getElementById(`code-${index - 1}`).focus();
+      document.getElementById(`code-${index - 1}`)?.focus();
     }
   };
 
@@ -75,6 +80,10 @@ export default function VerifyEmailPage() {
         code: verificationCode,
       });
       setMessage('Email verified successfully! Redirecting to login...');
+      
+      // Clean up storage
+      sessionStorage.removeItem('verifyEmail');
+      
       setTimeout(() => {
         router.push('/login?verified=true');
       }, 2000);
@@ -88,6 +97,7 @@ export default function VerifyEmailPage() {
   const handleResendCode = async () => {
     setLoading(true);
     setError('');
+    setMessage('');
     try {
       await authService.resendVerification(email);
       setMessage('Verification code sent! Check your email.');
@@ -122,7 +132,8 @@ export default function VerifyEmailPage() {
     </svg>
   );
 
-  if (!isMounted || !email) {
+  // Show loading state while email is being retrieved
+  if (!email) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
@@ -283,5 +294,18 @@ export default function VerifyEmailPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
