@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../../utils/auth';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,10 +23,14 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (!isMounted) return;
+
     const emailParam = searchParams.get('email');
     if (emailParam) {
       setEmail(emailParam);
-    } else {
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
       const storedEmail = localStorage.getItem('registrationEmail');
       if (storedEmail) {
         setEmail(storedEmail);
@@ -39,24 +43,28 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+      return () => clearTimeout(t);
     }
   }, [countdown]);
 
   const handleCodeChange = (index, value) => {
+    value = value.replace(/\D/g, '');
     if (value.length > 1) return;
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
+    const next = [...code];
+    next[index] = value;
+    setCode(next);
+
     if (value && index < 5) {
-      document.getElementById(`code-${index + 1}`).focus();
+      const el = document.getElementById(`code-${index + 1}`);
+      if (el) el.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
-      document.getElementById(`code-${index - 1}`).focus();
+      const prev = document.getElementById(`code-${index - 1}`);
+      if (prev) prev.focus();
     }
   };
 
@@ -67,19 +75,15 @@ export default function VerifyEmailPage() {
       setError('Please enter the 6-digit code');
       return;
     }
+
     setLoading(true);
     setError('');
     try {
-      await authService.verifyEmail({
-        email,
-        code: verificationCode,
-      });
+      await authService.verifyEmail({ email, code: verificationCode });
       setMessage('Email verified successfully! Redirecting to login...');
-      setTimeout(() => {
-        router.push('/login?verified=true');
-      }, 2000);
+      setTimeout(() => router.push('/login?verified=true'), 1400);
     } catch (err) {
-      setError(err.message || 'Verification failed');
+      setError(err?.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -93,32 +97,16 @@ export default function VerifyEmailPage() {
       setMessage('Verification code sent! Check your email.');
       setCountdown(60);
     } catch (err) {
-      setError(err.message || 'Failed to resend code');
+      setError(err?.message || 'Failed to resend code');
     } finally {
       setLoading(false);
     }
   };
 
   const LoadingSpinner = ({ className = 'h-5 w-5' }) => (
-    <svg
-      className={`animate-spin ${className}`}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      ></circle>
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      ></path>
+    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
     </svg>
   );
 
@@ -129,6 +117,7 @@ export default function VerifyEmailPage() {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
