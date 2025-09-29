@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@civic/auth/react';
+import { useUser } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-  import Sidebar from '@/components/Sidebar';
-  import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
 
 // Mock data for opportunities
 const mockOpportunities = [
@@ -89,7 +89,7 @@ const mockOpportunities = [
 ];
 
 export default function OpportunitiesPage() {
-  const { user } = useUser();
+  const { user, loading, logout } = useUser();
   const router = useRouter();
   const [opportunities, setOpportunities] = useState(mockOpportunities);
   const [filter, setFilter] = useState('all');
@@ -97,6 +97,7 @@ export default function OpportunitiesPage() {
   const [sortBy, setSortBy] = useState('deadline');
   const [appliedOpportunities, setAppliedOpportunities] = useState(new Set());
   const [activeTab, setActiveTab] = useState('opportunities');
+  
   // Handle application
   const handleApply = (opportunityId) => {
     setAppliedOpportunities(prev => {
@@ -138,6 +139,27 @@ export default function OpportunitiesPage() {
       if (sortBy === 'recent') return new Date(b.created) - new Date(a.created);
       return a.title.localeCompare(b.title);
     });
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-teal-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect due to useEffect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white font-sans">
@@ -281,7 +303,7 @@ export default function OpportunitiesPage() {
                         <div className="text-lg font-bold text-teal-900 mb-1">{opportunity.amount}</div>
                         <div className="flex items-center text-sm text-teal-600 mb-3">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 极 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                           {opportunity.applications} applications
                         </div>
