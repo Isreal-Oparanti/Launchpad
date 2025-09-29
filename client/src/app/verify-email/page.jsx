@@ -17,20 +17,16 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Wait until client is mounted
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Get email from URL or localStorage
   useEffect(() => {
     if (!isMounted) return;
-
     const emailParam = searchParams.get('email');
-
     if (emailParam) {
       setEmail(emailParam);
-    } else if (typeof window !== 'undefined') {
+    } else {
       const storedEmail = localStorage.getItem('registrationEmail');
       if (storedEmail) {
         setEmail(storedEmail);
@@ -41,7 +37,6 @@ export default function VerifyEmailPage() {
     }
   }, [searchParams, isMounted, router]);
 
-  // Countdown for resend
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -51,41 +46,38 @@ export default function VerifyEmailPage() {
 
   const handleCodeChange = (index, value) => {
     if (value.length > 1) return;
-
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-
     if (value && index < 5) {
-      const next = document.getElementById(`code-${index + 1}`);
-      if (next) next.focus();
+      document.getElementById(`code-${index + 1}`).focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
-      const prev = document.getElementById(`code-${index - 1}`);
-      if (prev) prev.focus();
+      document.getElementById(`code-${index - 1}`).focus();
     }
   };
 
   const handleVerify = async (e) => {
     e.preventDefault();
     const verificationCode = code.join('');
-
     if (verificationCode.length !== 6) {
       setError('Please enter the 6-digit code');
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
-      await authService.verifyEmail({ email, code: verificationCode });
-
+      await authService.verifyEmail({
+        email,
+        code: verificationCode,
+      });
       setMessage('Email verified successfully! Redirecting to login...');
-      setTimeout(() => router.push('/login?verified=true'), 2000);
+      setTimeout(() => {
+        router.push('/login?verified=true');
+      }, 2000);
     } catch (err) {
       setError(err.message || 'Verification failed');
     } finally {
@@ -96,10 +88,8 @@ export default function VerifyEmailPage() {
   const handleResendCode = async () => {
     setLoading(true);
     setError('');
-
     try {
       await authService.resendVerification(email);
-
       setMessage('Verification code sent! Check your email.');
       setCountdown(60);
     } catch (err) {
@@ -127,9 +117,7 @@ export default function VerifyEmailPage() {
       <path
         className="opacity-75"
         fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 
-        5.291A7.962 7.962 0 014 12H0c0 3.042 
-        1.135 5.824 3 7.938l3-2.647z"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
       ></path>
     </svg>
   );
@@ -150,7 +138,6 @@ export default function VerifyEmailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="p-8"
         >
-          {/* Header */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
@@ -166,18 +153,11 @@ export default function VerifyEmailPage() {
               >
                 <path
                   fillRule="evenodd"
-                  d="M2.94 6.412A2 2 0 002 8.108V16a2 2 0 002 2h12a2 2 0 002-2V8.108a2 2 0 
-                  00-.94-1.696l-6-3.75a2 2 0 00-2.12 
-                  0l-6 3.75zm2.615 2.423a1 1 0 
-                  10-1.11 1.664l5 3.333a1 1 0 
-                  001.11 0l5-3.333a1 1 0 
-                  00-1.11-1.664L10 11.798 5.555 
-                  8.835z"
+                  d="M2.94 6.412A2 2 0 002 8.108V16a2 2 0 002 2h12a2 2 0 002-2V8.108a2 2 0 00-.94-1.696l-6-3.75a2 2 0 00-2.12 0l-6 3.75zm2.615 2.423a1 1 0 10-1.11 1.664l5 3.333a1 1 0 001.11 0l5-3.333a1 1 0 00-1.11-1.664L10 11.798 5.555 8.835z"
                   clipRule="evenodd"
                 />
               </svg>
             </motion.div>
-
             <h1 className="text-2xl font-bold text-teal-900 mb-2">
               Verify Your Email
             </h1>
@@ -187,7 +167,6 @@ export default function VerifyEmailPage() {
             </p>
           </div>
 
-          {/* Messages */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -204,17 +183,7 @@ export default function VerifyEmailPage() {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 
-                    8 8 0 000 16zM8.707 
-                    7.293a1 1 0 00-1.414 
-                    1.414L8.586 10l-1.293 
-                    1.293a1 1 0 101.414 
-                    1.414L10 11.414l1.293 
-                    1.293a1 1 0 
-                    001.414-1.414L11.414 
-                    10l1.293-1.293a1 1 0 
-                    00-1.414-1.414L10 
-                    8.586 8.707 7.293z"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -237,13 +206,7 @@ export default function VerifyEmailPage() {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M10 18a8 8 0 
-                    100-16 8 8 0 000 
-                    16zm3.707-9.293a1 
-                    1 0 00-1.414-1.414L9 
-                    10.586 7.707 9.293a1 
-                    1 0 00-1.414 1.414l2 
-                    2a1 1 0 001.414 0l4-4z"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -252,7 +215,6 @@ export default function VerifyEmailPage() {
             )}
           </AnimatePresence>
 
-          {/* Code Input */}
           <form onSubmit={handleVerify} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-teal-700 mb-3 text-center">
@@ -297,7 +259,6 @@ export default function VerifyEmailPage() {
             </button>
           </form>
 
-          {/* Resend Code */}
           <div className="text-center mt-6">
             <p className="text-teal-600 text-sm mb-2">
               Didn't receive the code?
@@ -311,7 +272,6 @@ export default function VerifyEmailPage() {
             </button>
           </div>
 
-          {/* Back to Register */}
           <div className="text-center mt-6 pt-6 border-t border-teal-100">
             <button
               onClick={() => router.push('/register')}
