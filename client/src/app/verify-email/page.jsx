@@ -1,7 +1,4 @@
 'use client';
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
-export const revalidate = 0;
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -20,33 +17,31 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Set mounted state
+  // Wait until client is mounted
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Get email from URL parameters or localStorage
+  // Get email from URL or localStorage
   useEffect(() => {
     if (!isMounted) return;
-    
-    // Try to get email from URL parameters
+
     const emailParam = searchParams.get('email');
-    
+
     if (emailParam) {
       setEmail(emailParam);
-    } else {
-      // Fallback to localStorage
+    } else if (typeof window !== 'undefined') {
       const storedEmail = localStorage.getItem('registrationEmail');
       if (storedEmail) {
         setEmail(storedEmail);
-        localStorage.removeItem('registrationEmail'); // Clean up
+        localStorage.removeItem('registrationEmail');
       } else {
-        // If no email anywhere, redirect to register
         router.push('/register');
       }
     }
   }, [searchParams, isMounted, router]);
 
+  // Countdown for resend
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -56,27 +51,28 @@ export default function VerifyEmailPage() {
 
   const handleCodeChange = (index, value) => {
     if (value.length > 1) return;
-    
+
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
-    // Auto-focus next input
     if (value && index < 5) {
-      document.getElementById(`code-${index + 1}`).focus();
+      const next = document.getElementById(`code-${index + 1}`);
+      if (next) next.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !code[index] && index > 0) {
-      document.getElementById(`code-${index - 1}`).focus();
+      const prev = document.getElementById(`code-${index - 1}`);
+      if (prev) prev.focus();
     }
   };
 
   const handleVerify = async (e) => {
     e.preventDefault();
     const verificationCode = code.join('');
-    
+
     if (verificationCode.length !== 6) {
       setError('Please enter the 6-digit code');
       return;
@@ -86,21 +82,12 @@ export default function VerifyEmailPage() {
     setError('');
 
     try {
-      // Use authService to verify email
-      const data = await authService.verifyEmail({
-        email,
-        code: verificationCode
-      });
+      await authService.verifyEmail({ email, code: verificationCode });
 
       setMessage('Email verified successfully! Redirecting to login...');
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/login?verified=true');
-      }, 2000);
-
-    } catch (error) {
-      setError(error.message || 'Verification failed');
+      setTimeout(() => router.push('/login?verified=true'), 2000);
+    } catch (err) {
+      setError(err.message || 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -111,26 +98,42 @@ export default function VerifyEmailPage() {
     setError('');
 
     try {
-      // Use authService to resend verification code
-      const data = await authService.resendVerification(email);
+      await authService.resendVerification(email);
 
       setMessage('Verification code sent! Check your email.');
-      setCountdown(60); // 60 seconds countdown
-    } catch (error) {
-      setError(error.message || 'Failed to resend code');
+      setCountdown(60);
+    } catch (err) {
+      setError(err.message || 'Failed to resend code');
     } finally {
       setLoading(false);
     }
   };
 
-  const LoadingSpinner = ({ className = "h-5 w-5" }) => (
-    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  const LoadingSpinner = ({ className = 'h-5 w-5' }) => (
+    <svg
+      className={`animate-spin ${className}`}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 
+        5.291A7.962 7.962 0 014 12H0c0 3.042 
+        1.135 5.824 3 7.938l3-2.647z"
+      ></path>
     </svg>
   );
 
-  // Don't render anything until we've checked for the email
   if (!isMounted || !email) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
@@ -152,19 +155,35 @@ export default function VerifyEmailPage() {
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
+              transition={{ delay: 0.2, type: 'spring' }}
               className="w-20 h-20 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M2.94 6.412A2 2 0 002 8.108V16a2 2 0 002 2h12a2 2 0 002-2V8.108a2 2 0 00-.94-1.696l-6-3.75a2 2 0 00-2.12 0l-6 3.75zm2.615 2.423a1 1 0 10-1.11 1.664l5 3.333a1 1 0 001.11 0l5-3.333a1 1 0 00-1.11-1.664L10 11.798 5.555 8.835z" clipRule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-10 w-10 text-white"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M2.94 6.412A2 2 0 002 8.108V16a2 2 0 002 2h12a2 2 0 002-2V8.108a2 2 0 
+                  00-.94-1.696l-6-3.75a2 2 0 00-2.12 
+                  0l-6 3.75zm2.615 2.423a1 1 0 
+                  10-1.11 1.664l5 3.333a1 1 0 
+                  001.11 0l5-3.333a1 1 0 
+                  00-1.11-1.664L10 11.798 5.555 
+                  8.835z"
+                  clipRule="evenodd"
+                />
               </svg>
             </motion.div>
-            
+
             <h1 className="text-2xl font-bold text-teal-900 mb-2">
               Verify Your Email
             </h1>
             <p className="text-teal-600">
-              We sent a 6-digit code to <span className="font-semibold">{email}</span>
+              We sent a 6-digit code to{' '}
+              <span className="font-semibold">{email}</span>
             </p>
           </div>
 
@@ -177,8 +196,27 @@ export default function VerifyEmailPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 flex items-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2 flex-shrink-0"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 
+                    8 8 0 000 16zM8.707 
+                    7.293a1 1 0 00-1.414 
+                    1.414L8.586 10l-1.293 
+                    1.293a1 1 0 101.414 
+                    1.414L10 11.414l1.293 
+                    1.293a1 1 0 
+                    001.414-1.414L11.414 
+                    10l1.293-1.293a1 1 0 
+                    00-1.414-1.414L10 
+                    8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <span className="text-sm">{error}</span>
               </motion.div>
@@ -191,8 +229,23 @@ export default function VerifyEmailPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 flex items-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2 flex-shrink-0"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 
+                    100-16 8 8 0 000 
+                    16zm3.707-9.293a1 
+                    1 0 00-1.414-1.414L9 
+                    10.586 7.707 9.293a1 
+                    1 0 00-1.414 1.414l2 
+                    2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <span className="text-sm">{message}</span>
               </motion.div>
@@ -215,12 +268,14 @@ export default function VerifyEmailPage() {
                     pattern="[0-9]*"
                     maxLength="1"
                     value={digit}
-                    onChange={(e) => handleCodeChange(index, e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) =>
+                      handleCodeChange(index, e.target.value.replace(/\D/g, ''))
+                    }
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     className="w-12 h-12 text-center text-2xl font-bold border-2 border-teal-200 rounded-lg focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors"
                     disabled={loading}
                     whileFocus={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
                   />
                 ))}
               </div>
