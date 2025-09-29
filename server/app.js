@@ -13,81 +13,115 @@ const app = express();
 
 const authRoutes = require('./routes/authRoutes');
 
+// ======================
+// Environment Configuration
+// ======================
+const isProduction = process.env.NODE_ENV === 'production';
+const isStaging = process.env.NODE_ENV === 'staging';
+const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
+// Log environment info
+console.log(`🚀 Starting server in ${process.env.NODE_ENV || 'development'} mode`);
+
 const connectDatabase = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad';
+    // Use different databases for different environments
+    let mongoURI;
     
+    if (isProduction) {
+      mongoURI = process.env.MONGODB_URI;
+      console.log('📊 Using PRODUCTION database');
+    
+    } else {
+      mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad-dev';
+      console.log('💻 Using DEVELOPMENT database');
+    }
+    
+    if (!mongoURI) {
+      throw new Error('MongoDB URI is not defined for current environment');
+    }
+
     await mongoose.connect(mongoURI, {
-      maxPoolSize: 10, 
-      serverSelectionTimeoutMS: 5000, 
+      maxPoolSize: isProduction ? 20 : 10, 
+      serverSelectionTimeoutMS: isProduction ? 10000 : 5000, 
       socketTimeoutMS: 45000,
     });
 
-    console.log('Connected to MongoDB successfully');
+    console.log('✅ Connected to MongoDB successfully');
     
     mongoose.connection.on('error', (error) => {
-      console.error('MongoDB connection error:', error);
+      console.error('❌ MongoDB connection error:', error);
     });
     
     mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected');
+      console.warn('⚠️ MongoDB disconnected');
     });
     
     mongoose.connection.on('reconnected', () => {
-      console.log('MongoDB reconnected');
+      console.log('🔁 MongoDB reconnected');
     });
 
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
+    console.error('💥 Failed to connect to MongoDB:', error);
     process.exit(1);
   }
 };
 
-// ======================
-// Security Middleware
-// ======================
 
 // Helmet for security headers
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: {
+  contentSecurityPolicy: isProduction ? {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
-  },
+  } : false, // Disable CSP in development for easier debugging
 }));
 
 // CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://launchpad.com'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, 
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  maxAge: 86400 // 24 hours
+const getCorsOptions = () => {
+  const baseOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+  
+  if (isProduction) {
+    return {
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+        'https://launchpadbeta.netlify.app',
+        'https://launchpad-yrqx.onrender.com' 
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      maxAge: 86400
+    };
+  } else if (isStaging) {
+    return {
+      origin: process.env.ALLOWED_ORIGINS_STAGING?.split(',') || [
+        ...baseOrigins,
+        'https://launchpadbeta.netlify.app',
+        'https://launchpad-yrqx.onrender.com' 
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      maxAge: 86400
+    };
+  } else {
+    // Development - allow all origins for easier development
+    return {
+      origin: true,
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      maxAge: 86400
+    };
+  }
 };
 
-app.use(cors(corsOptions));
+app.use(cors(getCorsOptions()));
 
-// ======================
-// General Middleware
-// ======================
 
 
 app.use(compression());
@@ -95,65 +129,70 @@ app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-
 app.use(cookieParser());
 
-// Session configuration (For passport and temporary redirects)
-// app.use(session({
-//   secret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
-//   resave: false,
-//   saveUninitialized: false,
-//   store: MongoStore.create({
-//     mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad',
-//     collectionName: 'sessions',
-//     ttl: 24 * 60 * 60 // 1 day
-//   }),
-//   cookie: {
-//     secure: process.env.NODE_ENV === 'production',
-//     httpOnly: true,
-//     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-//   }
-// }));
 
-
-// Request logging
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
+if (isDevelopment) {
+  app.use(morgan('dev')); // Colored, detailed logs for development
+} else if (isStaging) {
+  app.use(morgan('combined')); // Standard Apache combined format for staging
 } else {
-  app.use(morgan('combined'));
+  app.use(morgan('common')); // Minimal logs for production
 }
 
-// ======================
-// Routes
-// ======================
-
-// Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({
+  const healthCheck = {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  });
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+  };
+  
+  res.status(200).json(healthCheck);
 });
+
+// Environment info endpoint (disable in production)
+if (!isProduction) {
+  app.get('/debug/env', (req, res) => {
+    res.json({
+      environment: process.env.NODE_ENV,
+      nodeVersion: process.version,
+      platform: process.platform,
+      corsConfig: getCorsOptions(),
+      database: {
+        readyState: mongoose.connection.readyState,
+        name: mongoose.connection.name,
+        host: mongoose.connection.host
+      }
+    });
+  });
+}
 
 // API routes
 app.use('/api/auth', authRoutes);
 
-
-
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route not found',
-    path: req.originalUrl
+    path: req.originalUrl,
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
+
 app.use((error, req, res, next) => {
-  console.error('Global error handler:', error);
+  // Don't log 4xx errors in production to reduce noise
+  if (!isProduction || (error.statusCode && error.statusCode >= 500)) {
+    console.error('🔴 Global error handler:', error);
+  }
 
-
+  // Mongoose validation errors
   if (error.name === 'ValidationError') {
     const errors = {};
     Object.keys(error.errors).forEach(key => {
@@ -167,7 +206,7 @@ app.use((error, req, res, next) => {
     });
   }
 
-
+  // Mongoose cast errors (invalid ObjectId)
   if (error.name === 'CastError') {
     return res.status(400).json({
       success: false,
@@ -175,7 +214,7 @@ app.use((error, req, res, next) => {
     });
   }
 
-
+  // JWT errors
   if (error.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
@@ -198,15 +237,19 @@ app.use((error, req, res, next) => {
     });
   }
 
-
   const statusCode = error.statusCode || error.status || 500;
-  res.status(statusCode).json({
+  
+  // Don't expose stack traces in production
+  const response = {
     success: false,
     message: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { 
-      stack: error.stack 
+    ...(isProduction ? {} : { 
+      stack: error.stack,
+      type: error.name 
     })
-  });
+  };
+  
+  res.status(statusCode).json(response);
 });
 
 // ======================
@@ -222,54 +265,65 @@ const gracefulShutdown = async (signal) => {
       await new Promise((resolve) => {
         server.close(resolve);
       });
-      console.log('Server closed successfully');
+      console.log('✅ Server closed successfully');
     }
     
     // Close database connection
-    await mongoose.connection.close();
-    console.log('Database connection closed');
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close();
+      console.log('✅ Database connection closed');
+    }
     
-    console.log('Graceful shutdown completed');
+    console.log('🎯 Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    console.error('Error during shutdown:', error);
+    console.error('💥 Error during shutdown:', error);
     process.exit(1);
   }
 };
 
-
+// Signal handlers
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  console.error('💥 Uncaught Exception:', error);
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('UNHANDLED_REJECTION');
 });
 
+// ======================
+// Server Startup
+// ======================
 
 const PORT = process.env.PORT || 5000;
 let server;
 
 const startServer = async () => {
   try {
-
     await connectDatabase();
     
-
     server = app.listen(PORT, () => {
+      console.log('\n' + '='.repeat(50));
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
+      console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+      
+      if (!isProduction) {
+        console.log(`🐛 Debug info: http://localhost:${PORT}/debug/env`);
+      }
+      
+      console.log('='.repeat(50) + '\n');
     });
     
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('💥 Failed to start server:', error);
     process.exit(1);
   }
 };
