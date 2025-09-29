@@ -7,16 +7,11 @@
     "start": "node app.js",
     "dev": "nodemon --watch . --ext js,json --ignore node_modules/ --delay 500ms app.js",
     "dev-fast": "nodemon -e js,json --ignore node_modules/ app.js",
-    "build": "npm run build:clean && npm run build:copy",
-    "build:clean": "rm -rf dist || true",
-    "build:copy": "mkdir -p dist && cp -r app.js routes models middleware config dist/ 2>/dev/null || true",
     "serve": "node dist/app.js",
     "prod": "npm run build && npm run serve",
     "test": "jest --verbose",
-    "test:watch": "jest --watch",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
-   
+    "test:watch": "jest --watch"
+    
   },
   "author": "Isreal",
   "license": "ISC",
