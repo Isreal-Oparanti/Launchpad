@@ -1,14 +1,12 @@
-// app/projects/page.jsx
+
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@civic/auth/react';
 import { useRouter } from 'next/navigation';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 
-// Mock data with random images from Picsum
 const mockProjects = [
   {
     id: 1,
@@ -109,7 +107,6 @@ const mockProjects = [
 ];
 
 export default function ProjectsPage() {
-  const { user } = useUser();
   const router = useRouter();
   const [projects, setProjects] = useState(mockProjects);
   const [filter, setFilter] = useState('all');
@@ -117,12 +114,11 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState('popular');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('projects');
+  const dummyUser = { name: "John Doe" };
 
-  // Handle upvote
   const handleUpvote = (projectId) => {
     setProjects(projects.map(project => {
       if (project.id === projectId) {
-        // Toggle upvote - in a real app, this would be an API call
         const hasUpvoted = project.upvoted;
         return {
           ...project,
@@ -134,14 +130,13 @@ export default function ProjectsPage() {
     }));
   };
 
-  // Handle project creation
   const handleCreateProject = (projectData) => {
     const newProject = {
       id: Math.max(...projects.map(p => p.id)) + 1,
       title: projectData.title,
       creator: { 
-        name: user?.name || 'Anonymous', 
-        avatar: user?.name?.charAt(0) || 'A', 
+        name: dummyUser.name, 
+        avatar: dummyUser.name.charAt(0), 
         department: "Unknown" 
       },
       description: projectData.description,
@@ -161,7 +156,6 @@ export default function ProjectsPage() {
     setIsCreateModalOpen(false);
   };
 
-  // Filter and sort projects
   const filteredProjects = projects
     .filter(project => {
       if (filter === 'all') return true;
@@ -188,7 +182,6 @@ export default function ProjectsPage() {
        <Header />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-teal-900 mb-2">Explore Projects</h1>
@@ -205,13 +198,11 @@ export default function ProjectsPage() {
           </button>
         </div>
 
-        {/* Filters and Search */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-teal-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-teal-400" fill="none" stroke="currentColor" viewBox="极 0 24 24">
+                <svg className="h-5 w-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -224,7 +215,6 @@ export default function ProjectsPage() {
               />
             </div>
 
-            {/* Filter by stage */}
             <select 
               className="p-3 border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               value={filter}
@@ -237,7 +227,6 @@ export default function ProjectsPage() {
               <option value="launched">Launched</option>
             </select>
 
-            {/* Sort by */}
             <select 
               className="p-3 border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               value={sortBy}
@@ -250,11 +239,9 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
             <div key={project.id} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-teal-100 hover:shadow-xl transition-shadow group">
-              {/* Project Image */}
               <div className="h-48 relative overflow-hidden">
                 <img 
                   src={project.image} 
@@ -269,7 +256,6 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              {/* Project Content */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-teal-900 group-hover:text-teal-700 transition-colors">{project.title}</h3>
@@ -277,7 +263,6 @@ export default function ProjectsPage() {
 
                 <p className="text-teal-600 mb-4 line-clamp-2">{project.description}</p>
 
-                {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {project.tags.slice(0, 3).map((tag) => (
                     <span key={tag} className="bg-teal-100 text-teal-700 text-xs px-2 py-1 rounded">
@@ -291,12 +276,11 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center justify-between mb-4 text-sm text-teal-500">
                   <div className="flex items-center space-x-4">
                     <span className="flex items-center">
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 极 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       {project.collaborators}
                     </span>
@@ -310,7 +294,6 @@ export default function ProjectsPage() {
                   <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                 </div>
 
-                {/* Creator Info and Upvote */}
                 <div className="flex items-center justify-between border-t border-teal-100 pt-4">
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-teal-200 rounded-full flex items-center justify-center text-xs font-medium text-teal-700 mr-2">
@@ -329,13 +312,12 @@ export default function ProjectsPage() {
                     }`}
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69极1.07-3.292z" />
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                     <span className="font-medium">Upvote · {project.upvotes}</span>
                   </button>
                 </div>
 
-                {/* Project Links */}
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-teal-100">
                   <div className="flex space-x-3">
                     {project.repository && (
@@ -365,7 +347,6 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        {/* Empty State */}
         {filteredProjects.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -388,7 +369,6 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Create Project Modal */}
       <CreateProjectModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)}
