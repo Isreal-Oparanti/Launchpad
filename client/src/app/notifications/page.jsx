@@ -1,13 +1,12 @@
-// app/notifications/page.jsx
 'use client';
-import { useUser } from '@civic/auth/react';
+import { useUser } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 
 export default function Notifications() {
-  const { user, isLoading } = useUser();
+  const { user, loading, logout } = useUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('notifications');
   
@@ -81,12 +80,12 @@ export default function Notifications() {
   ]);
   
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/');
+    if (!loading && !user) {
+      router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, loading, router]);
   
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-teal-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
