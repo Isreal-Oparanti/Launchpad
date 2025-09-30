@@ -85,40 +85,34 @@ export default function RegisterPage() {
   };
 
   // Updated handleSubmit function
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // In your register page handleSubmit function, replace the redirect logic with:
 
-    if (!validateForm()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setIsSubmitting(true);
-    setErrors({});
+  if (!validateForm()) return;
 
-    try {
-      // Use authService to call the backend
-      const data = await authService.register(formData);
-      
-      // Handle successful registration
-      setRegistrationSuccess(true);
-      
-      // Set timeout to redirect to verify email page after showing success message
-      timeoutRef.current = setTimeout(() => {
-        setRegistrationSuccess(false);
-       localStorage.setItem('registrationEmail', formData.email);
+  setIsSubmitting(true);
+  setErrors({});
 
-// Try to redirect with email parameter
-const url = `/verify-email?email=${encodeURIComponent(formData.email)}`;
-console.log('Redirecting to:', url); // For debugging
-router.push(url);
-      }, 2000);
+  try {
+    const data = await authService.register(formData);
+    
+    setRegistrationSuccess(true);
+    
+    timeoutRef.current = setTimeout(() => {
+      setRegistrationSuccess(false);
+      // Simple redirect with email in URL - that's it!
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+    }, 2000);
 
-    } catch (error) {
-      console.error('Registration failed:', error);
-      setErrors({ general: error.message || 'Registration failed. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  } catch (error) {
+    console.error('Registration failed:', error);
+    setErrors({ general: error.message || 'Registration failed. Please try again.' });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   // Loading spinner component
   const LoadingSpinner = ({ className = "h-5 w-5" }) => (
     <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
