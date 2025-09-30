@@ -1,14 +1,13 @@
-// app/projects/page.jsx
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@civic/auth/react';
+
 import { useRouter } from 'next/navigation';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 
-// Mock data with random images from Picsum
+
 const mockProjects = [
   {
     id: 1,
@@ -109,7 +108,7 @@ const mockProjects = [
 ];
 
 export default function ProjectsPage() {
-  const { user } = useUser();
+
   const router = useRouter();
   const [projects, setProjects] = useState(mockProjects);
   const [filter, setFilter] = useState('all');

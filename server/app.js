@@ -30,11 +30,11 @@ const connectDatabase = async () => {
     
     if (isProduction) {
       mongoURI = process.env.MONGODB_URI;
-      console.log('📊 Using PRODUCTION database');
+      console.log('Using PRODUCTION database');
     
     } else {
       mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad-dev';
-      console.log('💻 Using DEVELOPMENT database');
+      console.log('Using DEVELOPMENT database');
     }
     
     if (!mongoURI) {
@@ -47,22 +47,22 @@ const connectDatabase = async () => {
       socketTimeoutMS: 45000,
     });
 
-    console.log('✅ Connected to MongoDB successfully');
+    console.log('Connected to MongoDB successfully');
     
     mongoose.connection.on('error', (error) => {
-      console.error('❌ MongoDB connection error:', error);
+      console.error('MongoDB connection error:', error);
     });
     
     mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️ MongoDB disconnected');
+      console.warn('MongoDB disconnected');
     });
     
     mongoose.connection.on('reconnected', () => {
-      console.log('🔁 MongoDB reconnected');
+      console.log('MongoDB reconnected');
     });
 
   } catch (error) {
-    console.error('💥 Failed to connect to MongoDB:', error);
+    console.error('Failed to connect to MongoDB:', error);
     process.exit(1);
   }
 };
@@ -189,7 +189,7 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
   // Don't log 4xx errors in production to reduce noise
   if (!isProduction || (error.statusCode && error.statusCode >= 500)) {
-    console.error('🔴 Global error handler:', error);
+    console.error(' Global error handler:', error);
   }
 
   // Mongoose validation errors
@@ -265,19 +265,19 @@ const gracefulShutdown = async (signal) => {
       await new Promise((resolve) => {
         server.close(resolve);
       });
-      console.log('✅ Server closed successfully');
+      console.log('Server closed successfully');
     }
     
     // Close database connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
-      console.log('✅ Database connection closed');
+      console.log('Database connection closed');
     }
     
-    console.log('🎯 Graceful shutdown completed');
+    console.log('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    console.error('💥 Error during shutdown:', error);
+    console.error('Error during shutdown:', error);
     process.exit(1);
   }
 };
@@ -288,12 +288,12 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('💥 Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('UNHANDLED_REJECTION');
 });
 
@@ -309,21 +309,18 @@ const startServer = async () => {
     await connectDatabase();
     
     server = app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(50));
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚀Server running on port ${PORT}`);
+      console.log(`📍Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
-      console.log(`❤️  Health check: http://localhost:${PORT}/health`);
       
       if (!isProduction) {
-        console.log(`🐛 Debug info: http://localhost:${PORT}/debug/env`);
+        console.log(`Debug info: http://localhost:${PORT}/debug/env`);
       }
       
-      console.log('='.repeat(50) + '\n');
     });
     
   } catch (error) {
-    console.error('💥 Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
