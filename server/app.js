@@ -20,12 +20,11 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isStaging = process.env.NODE_ENV === 'staging';
 const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 
-// Log environment info
 console.log(`🚀 Starting server in ${process.env.NODE_ENV || 'development'} mode`);
 
 const connectDatabase = async () => {
   try {
-    // Use different databases for different environments
+
     let mongoURI;
     
     if (isProduction) {
@@ -42,7 +41,7 @@ const connectDatabase = async () => {
     }
 
     await mongoose.connect(mongoURI, {
-      maxPoolSize: isProduction ? 20 : 10, 
+      maxPoolSize: isProduction ? 20 : 10,
       serverSelectionTimeoutMS: isProduction ? 10000 : 5000, 
       socketTimeoutMS: 45000,
     });
@@ -78,7 +77,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
     },
-  } : false, // Disable CSP in development for easier debugging
+  } : false, 
 }));
 
 // CORS configuration
@@ -89,7 +88,7 @@ const getCorsOptions = () => {
     return {
       origin: process.env.ALLOWED_ORIGINS?.split(',') || [
         'https://launchpadbeta.netlify.app',
-        'https://launchpad-yrqx.onrender.com' 
+        'https://launchpad-yrqx.onrender.com'
       ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

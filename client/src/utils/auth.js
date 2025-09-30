@@ -1,7 +1,7 @@
 class AuthService {
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-  }
+  this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+}
 
   async register(userData) {
     const response = await fetch(`${this.baseURL}/auth/register`, {
