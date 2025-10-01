@@ -24,13 +24,11 @@ console.log(`🚀 Starting server in ${process.env.NODE_ENV || 'development'} mo
 
 const connectDatabase = async () => {
   try {
-
     let mongoURI;
     
     if (isProduction) {
       mongoURI = process.env.MONGODB_URI;
       console.log('Using PRODUCTION database');
-    
     } else {
       mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/launchpad-dev';
       console.log('Using DEVELOPMENT database');
@@ -66,6 +64,41 @@ const connectDatabase = async () => {
   }
 };
 
+// ======================
+// CORS Configuration
+// ======================
+const getCorsOptions = () => {
+  const baseOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+  
+  if (isProduction) {
+    return {
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+        'https://launchpadbeta.netlify.app'
+      ],
+      credentials: true, 
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Set-Cookie'], 
+      maxAge: 86400
+    };
+  } else {
+    return {
+      origin: baseOrigins,
+      credentials: true, 
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Set-Cookie'], 
+      maxAge: 86400
+    };
+  }
+};
+
+// ======================
+// Middleware
+// ======================
+
+// Apply CORS middleware FIRST
+app.use(cors(getCorsOptions()));
 
 // Helmet for security headers
 app.use(helmet({
@@ -80,64 +113,23 @@ app.use(helmet({
   } : false, 
 }));
 
-// CORS configuration
-const getCorsOptions = () => {
-  const baseOrigins = ['http://localhost:3000', 'http://localhost:3001'];
-  
-  if (isProduction) {
-    return {
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-        'https://launchpadbeta.netlify.app',
-        'https://launchpad-yrqx.onrender.com'
-      ],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      maxAge: 86400
-    };
-  } else if (isStaging) {
-    return {
-      origin: process.env.ALLOWED_ORIGINS_STAGING?.split(',') || [
-        ...baseOrigins,
-        'https://launchpadbeta.netlify.app',
-        'https://launchpad-yrqx.onrender.com' 
-      ],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      maxAge: 86400
-    };
-  } else {
-    // Development - allow all origins for easier development
-    return {
-      origin: true,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      maxAge: 86400
-    };
-  }
-};
-
-app.use(cors(getCorsOptions()));
-
-
-
 app.use(compression());
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 app.use(cookieParser());
 
-
+// Logging
 if (isDevelopment) {
-  app.use(morgan('dev')); // Colored, detailed logs for development
+  app.use(morgan('dev'));
 } else if (isStaging) {
-  app.use(morgan('combined')); // Standard Apache combined format for staging
+  app.use(morgan('combined'));
 } else {
-  app.use(morgan('common')); // Minimal logs for production
+  app.use(morgan('common'));
 }
+
+// ======================
+// Routes
+// ======================
 
 app.get('/health', (req, res) => {
   const healthCheck = {
@@ -184,14 +176,12 @@ app.use((req, res) => {
   });
 });
 
-
+// Error handler
 app.use((error, req, res, next) => {
-  // Don't log 4xx errors in production to reduce noise
   if (!isProduction || (error.statusCode && error.statusCode >= 500)) {
-    console.error(' Global error handler:', error);
+    console.error('Global error handler:', error);
   }
 
-  // Mongoose validation errors
   if (error.name === 'ValidationError') {
     const errors = {};
     Object.keys(error.errors).forEach(key => {
@@ -205,7 +195,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Mongoose cast errors (invalid ObjectId)
   if (error.name === 'CastError') {
     return res.status(400).json({
       success: false,
@@ -213,7 +202,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // JWT errors
   if (error.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
@@ -228,7 +216,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // CORS errors
   if (error.message && error.message.includes('CORS')) {
     return res.status(403).json({
       success: false,
@@ -238,7 +225,6 @@ app.use((error, req, res, next) => {
 
   const statusCode = error.statusCode || error.status || 500;
   
-  // Don't expose stack traces in production
   const response = {
     success: false,
     message: error.message || 'Internal server error',
@@ -254,12 +240,10 @@ app.use((error, req, res, next) => {
 // ======================
 // Graceful Shutdown
 // ======================
-
 const gracefulShutdown = async (signal) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
   
   try {
-    // Close server
     if (server) {
       await new Promise((resolve) => {
         server.close(resolve);
@@ -267,7 +251,6 @@ const gracefulShutdown = async (signal) => {
       console.log('Server closed successfully');
     }
     
-    // Close database connection
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
       console.log('Database connection closed');
@@ -281,16 +264,12 @@ const gracefulShutdown = async (signal) => {
   }
 };
 
-// Signal handlers
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
-
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('UNHANDLED_REJECTION');
@@ -299,7 +278,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // ======================
 // Server Startup
 // ======================
-
 const PORT = process.env.PORT || 5000;
 let server;
 
@@ -308,14 +286,13 @@ const startServer = async () => {
     await connectDatabase();
     
     server = app.listen(PORT, () => {
-      console.log(`🚀Server running on port ${PORT}`);
-      console.log(`📍Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
       
       if (!isProduction) {
-        console.log(`Debug info: http://localhost:${PORT}/debug/env`);
+        console.log(`🔧 Debug info: http://localhost:${PORT}/debug/env`);
       }
-      
     });
     
   } catch (error) {

@@ -84,31 +84,43 @@
     }
 
     setAuthCookies(res, tokens) {
-      const isProduction = process.env.NODE_ENV === 'production';
-      
-      res.cookie('accessToken', tokens.accessToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'strict' : 'lax',
-        maxAge: 15 * 60 * 1000,
-        path: '/'
-      });
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Common cookie options for production cross-origin setup
+  const cookieOptions = {
+    httpOnly: true,
+    secure: isProduction, // Must be true in production for sameSite: 'none'
+    sameSite: isProduction ? 'none' : 'lax', // 'none' allows cross-origin cookies
+    path: '/',
+  };
+  
+  res.cookie('accessToken', tokens.accessToken, {
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
 
-      res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? 'strict' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: '/auth'
-      });
-    }
+  res.cookie('refreshToken', tokens.refreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+}
 
-    clearAuthCookies(res) {
-      res.clearCookie('accessToken', { path: '/' });
-      res.clearCookie('refreshToken', { path: '/auth' });
-    }
+clearAuthCookies(res) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.clearCookie('accessToken', { 
+    path: '/',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction
+  });
+  
+  res.clearCookie('refreshToken', { 
+    path: '/',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction
+  });
+}
   }
-
   const jwtUtils = new JWTUtils();
 
   const authenticate = async (req, res, next) => {
