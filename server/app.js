@@ -12,7 +12,7 @@ require('dotenv').config();
 const app = express();
 
 const authRoutes = require('./routes/authRoutes');
-
+const projectRoutes = require('./routes/projectRoutes'); 
 // ======================
 // Environment Configuration
 // ======================
@@ -165,6 +165,7 @@ if (!isProduction) {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes); 
 
 // 404 handler
 app.use((req, res) => {

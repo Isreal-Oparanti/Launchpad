@@ -10,6 +10,17 @@ const userSchema = new mongoose.Schema({
     maxLength: [100, 'Full name cannot exceed 100 characters']
   },
   
+  username: {
+    type: String,
+    required: [false, 'Username is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    minLength: [3, 'Username must be at least 3 characters'],
+    maxLength: [30, 'Username cannot exceed 30 characters'],
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+  },
+  
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -46,6 +57,12 @@ const userSchema = new mongoose.Schema({
   major: {
     type: String,
     trim: true,
+    default: null
+  },
+  
+  bio: {
+    type: String,
+    maxLength: [500, 'Bio cannot exceed 500 characters'],
     default: null
   },
   
@@ -115,11 +132,14 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Indexes
 userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
 userSchema.index({ googleId: 1 });
 userSchema.index({ school: 1 });
 userSchema.index({ createdAt: -1 });
 
+// Virtual for initials
 userSchema.virtual('initials').get(function() {
   if (!this.fullName) return 'U';
   return this.fullName
@@ -129,6 +149,12 @@ userSchema.virtual('initials').get(function() {
     .join('');
 });
 
+// Virtual for display name (username or fullName)
+userSchema.virtual('displayName').get(function() {
+  return this.username || this.fullName.split(' ')[0];
+});
+
+// Pre-save middleware
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password') || !this.password) return next();
   
@@ -143,6 +169,7 @@ userSchema.pre('save', async function(next) {
 userSchema.pre('save', function(next) {
   this.profileCompleted = !!(
     this.fullName &&
+    this.username &&
     this.email &&
     this.school &&
     this.isEmailVerified &&
@@ -151,6 +178,7 @@ userSchema.pre('save', function(next) {
   next();
 });
 
+// Instance methods
 userSchema.methods.comparePassword = async function(candidatePassword) {
   if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
@@ -176,6 +204,7 @@ userSchema.methods.verifyEmailCode = function(code) {
   return true;
 };
 
+// Static methods
 userSchema.statics.findByEmailOrGoogle = function(email, googleId = null) {
   const query = { email: email.toLowerCase() };
   if (googleId) {
@@ -187,15 +216,25 @@ userSchema.statics.findByEmailOrGoogle = function(email, googleId = null) {
   return this.findOne(query);
 };
 
+userSchema.statics.findByUsername = function(username) {
+  return this.findOne({ username: username.toLowerCase() });
+};
+
 userSchema.statics.createUser = async function(userData) {
   const session = await mongoose.startSession();
   
   try {
     session.startTransaction();
     
+    // Check if email or username already exists
     const existingUser = await this.findByEmailOrGoogle(userData.email, userData.googleId);
     if (existingUser) {
       throw new Error('User already exists with this email');
+    }
+    
+    const existingUsername = await this.findByUsername(userData.username);
+    if (existingUsername) {
+      throw new Error('Username already taken');
     }
     
     const user = new this(userData);

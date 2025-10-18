@@ -1,7 +1,7 @@
 class AuthService {
   constructor() {
-  this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-}
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  }
 
   async register(userData) {
     const response = await fetch(`${this.baseURL}/auth/register`, {
@@ -98,6 +98,25 @@ class AuthService {
     });
 
     return response.json();
+  }
+
+  async updateProfile(profileData) {
+    const response = await fetch(`${this.baseURL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(profileData),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Profile update failed');
+    }
+    
+    return data;
   }
 }
 
