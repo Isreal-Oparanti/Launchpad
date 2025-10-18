@@ -53,11 +53,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [router]);
   
-  const features = [
-    { text: "Micro-grants available", color: "from-orange-400 to-orange-500" },
-    { text: "Project Spotlight", color: "from-blue-400 to-blue-500" },
-    { text: "Real Opportunities", color: "from-green-400 to-green-500" }
-  ];
+  
   
   
   const handleNavigation = (path) => {
@@ -384,34 +380,6 @@ export default function Home() {
               </motion.p>
               
               {/* Animated Feature Rotator */}
-              <motion.div 
-                className="mb-8 p-4 bg-white/60 backdrop-blur-sm rounded-xl border border-teal-200/50 shadow-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-              >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentFeature}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5 }}
-                    className={`text-lg font-semibold bg-gradient-to-r ${features[currentFeature].color} bg-clip-text text-transparent flex items-center`}
-                  >
-                    <motion.span
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 0.5 }}
-                      className="mr-2"
-                    >
-                      {currentFeature === 0 && <MicroGrantIcon />}
-                      {currentFeature === 1 && <ProjectIcon />}
-                      {currentFeature === 2 && <OpportunityIcon />}
-                    </motion.span>
-                    {features[currentFeature].text}
-                  </motion.div>
-                </AnimatePresence>
-              </motion.div>
               
               {/* CTA Buttons */}
               <motion.div 
@@ -568,20 +536,7 @@ export default function Home() {
                   </div>
                 </motion.div>
                 
-                <motion.div 
-                  className="absolute -bottom-4 -left-4 bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg z-20 border border-white/50"
-                  {...floatingAnimation}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex items-center">
-                    <motion.div 
-                      className="w-2 h-2 bg-green-500 rounded-full mr-2"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                    />
-                    <span className="text-sm font-semibold">3 Mentors Interested</span>
-                  </div>
-                </motion.div>
+             
               </motion.div>
             </motion.div>
           </div>
