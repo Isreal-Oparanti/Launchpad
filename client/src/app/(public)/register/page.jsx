@@ -9,6 +9,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     fullName: '',
+    username: '',
     school: '',
     major: ''
   });
@@ -76,6 +77,14 @@ export default function RegisterPage() {
       newErrors.fullName = 'Full name is required';
     }
 
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+    }
+
     if (!formData.school) {
       newErrors.school = 'School is required';
     }
@@ -84,35 +93,32 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Updated handleSubmit function
-  // In your register page handleSubmit function, replace the redirect logic with:
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+    if (!validateForm()) return;
 
-  if (!validateForm()) return;
+    setIsSubmitting(true);
+    setErrors({});
 
-  setIsSubmitting(true);
-  setErrors({});
+    try {
+      const data = await authService.register(formData);
+      
+      setRegistrationSuccess(true);
+      
+      timeoutRef.current = setTimeout(() => {
+        setRegistrationSuccess(false);
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+      }, 2000);
 
-  try {
-    const data = await authService.register(formData);
-    
-    setRegistrationSuccess(true);
-    
-    timeoutRef.current = setTimeout(() => {
-      setRegistrationSuccess(false);
-      // Simple redirect with email in URL - that's it!
-      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-    }, 2000);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      setErrors({ general: error.message || 'Registration failed. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  } catch (error) {
-    console.error('Registration failed:', error);
-    setErrors({ general: error.message || 'Registration failed. Please try again.' });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
   // Loading spinner component
   const LoadingSpinner = ({ className = "h-5 w-5" }) => (
     <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -135,14 +141,12 @@ const handleSubmit = async (e) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Header for mobile */}
         {isMobile && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-6 text-white text-center relative overflow-hidden"
           >
-            {/* Animated background elements */}
             <div className="absolute top-0 left-0 w-full h-full">
               <div className="absolute top-4 right-4 w-12 h-12 bg-orange-400/20 rounded-full animate-pulse"></div>
               <div className="absolute bottom-4 left-4 w-8 h-8 bg-teal-300/30 rounded-full animate-bounce delay-700"></div>
@@ -161,7 +165,6 @@ const handleSubmit = async (e) => {
         )}
 
         <div className="flex flex-col md:flex-row">
-          {/* Left side - Enhanced Illustration */}
           {!isMobile && (
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -169,7 +172,6 @@ const handleSubmit = async (e) => {
               transition={{ duration: 0.6 }}
               className="w-full md:w-2/5 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-8 text-white flex flex-col justify-center items-center relative overflow-hidden"
             >
-              {/* Animated background elements */}
               <div className="absolute inset-0">
                 <motion.div
                   animate={{
@@ -272,9 +274,7 @@ const handleSubmit = async (e) => {
             </motion.div>
           )}
 
-          {/* Right side - Form */}
           <div className="w-full md:w-3/5 p-6 md:p-8">
-            {/* Registration Success Message */}
             <AnimatePresence>
               {registrationSuccess && (
                 <motion.div
@@ -344,6 +344,24 @@ const handleSubmit = async (e) => {
               </div>
 
               <div>
+                <label htmlFor="username" className="block text-sm font-medium text-teal-700 mb-1">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
+                    errors.username ? 'border-red-500' : 'border-teal-100'
+                  }`}
+                  placeholder="Enter a unique username"
+                />
+                {errors.username && <p className="mt-1 text-sm text-red-600">{errors.username}</p>}
+              </div>
+
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-teal-700 mb-1">
                   Email Address
                 </label>
@@ -385,7 +403,7 @@ const handleSubmit = async (e) => {
 
                 <div>
                   <label htmlFor="major" className="block text-sm font-medium text-teal-700 mb-1">
-                    Field of Study
+                    Field of Study (Optional)
                   </label>
                   <input
                     id="major"
@@ -422,12 +440,12 @@ const handleSubmit = async (e) => {
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3,10 3s8.268 2.943,9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 8.268 7c0 4.057-3.79 7-8.268 7S.458 14.057 .458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3,10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7,9.542 7 .847 0 1.669-.105 2.454-.303z" />
+                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd" />
+                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
                     </svg>
                   )}
                 </button>

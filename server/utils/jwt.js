@@ -123,56 +123,31 @@ clearAuthCookies(res) {
   }
   const jwtUtils = new JWTUtils();
 
-  const authenticate = async (req, res, next) => {
-    try {
-      const token = jwtUtils.extractTokenFromRequest(req);
-      
-      if (!token) {
-        return res.status(401).json({
-          success: false,
-          message: 'Access token required'
-        });
-      }
-
-      const decoded = jwtUtils.verifyAccessToken(token);
-      const user = await User.findById(decoded.id).select('-password');
-      
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-
-      req.user = user;
-      req.token = token;
-      
-      next();
-    } catch (error) {
-      console.error('Authentication error:', error);
-      
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({
-          success: false,
-          message: 'Token expired',
-          code: 'TOKEN_EXPIRED'
-        });
-      }
-      
-      if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid token',
-          code: 'INVALID_TOKEN'
-        });
-      }
-      
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication failed'
-      });
+const authenticate = async (req, res, next) => {
+  try {
+    const token = jwtUtils.extractTokenFromRequest(req);
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Access token required' });
     }
-  };
+    const decoded = jwtUtils.verifyAccessToken(token);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+    req.user = user;
+    req.token = token;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ success: false, message: 'Invalid token', code: 'INVALID_TOKEN' });
+    }
+    return res.status(401).json({ success: false, message: 'Authentication failed' });
+  }
+};
 
   const optionalAuth = async (req, res, next) => {
     try {

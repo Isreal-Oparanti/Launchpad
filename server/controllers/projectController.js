@@ -1,34 +1,96 @@
 const Project = require('../models/Project');
-const Comment = require('../models/Comment');
 
 class ProjectController {
+  async createProject(req, res) {
+    try {
+      console.log('===== CREATE PROJECT DEBUG =====');
+      console.log('Headers:', req.headers);
+      console.log('req.body:', req.body);
+      console.log('req.files:', req.files);
+      console.log('req.user:', req.user);
+      console.log('================================');
+
+      if (!req.body || Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No form data received. Ensure the request is multipart/form-data.',
+        });
+      }
+
+      const requiredFields = ['title', 'tagline', 'problemStatement', 'solution', 'targetMarket', 'category', 'stage'];
+      for (const field of requiredFields) {
+        if (!req.body[field] || req.body[field].trim() === '') {
+          return res.status(400).json({
+            success: false,
+            message: `Missing or empty required field: ${field}`,
+          });
+        }
+      }
+
+      let tags = [];
+      if (req.body.tags) {
+        try {
+          tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
+        } catch (e) {
+          console.error('Failed to parse tags:', e);
+          tags = [];
+        }
+      }
+
+      const projectData = {
+        title: req.body.title,
+        tagline: req.body.tagline,
+        problemStatement: req.body.problemStatement,
+        solution: req.body.solution,
+        targetMarket: req.body.targetMarket,
+        category: req.body.category,
+        stage: req.body.stage,
+        tags,
+        demoUrl: req.body.demoUrl || '',
+        creator: req.user._id,
+        isPublished: req.body.isPublished === 'true',
+        logo: req.files?.logo ? { data: req.files.logo[0].buffer, contentType: req.files.logo[0].mimetype } : null,
+        coverImage: req.files?.coverImage ? { data: req.files.coverImage[0].buffer, contentType: req.files.coverImage[0].mimetype } : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActivityAt: new Date(),
+        upvoteCount: 0,
+        viewCount: 0,
+        commentCount: 0,
+        interestCount: 0,
+      };
+
+      console.log('Project data before saving:', projectData);
+
+      const project = await Project.create(projectData);
+      await project.populate('creator', 'fullName profilePicture school major initials');
+
+      console.log('✅ Project created successfully:', project._id);
+
+      res.status(201).json({
+        success: true,
+        data: project,
+        message: 'Project created successfully',
+      });
+    } catch (error) {
+      console.error('❌ Create project error:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to create project',
+        errors: error.errors,
+      });
+    }
+  }
 
   async getAllProjects(req, res) {
     try {
-      const {
-        page = 1,
-        limit = 12,
-        category,
-        stage,
-        search,
-        sort = 'recent'
-      } = req.query;
-
+      const { page = 1, limit = 12, category, stage, search, sort = 'recent' } = req.query;
       const skip = (page - 1) * limit;
-      
       const query = { isPublished: true };
-      
-      if (category && category !== 'all') {
-        query.category = category;
-      }
-      
-      if (stage && stage !== 'all') {
-        query.stage = stage;
-      }
-      
-      if (search) {
-        query.$text = { $search: search };
-      }
+
+      if (category && category !== 'all') query.category = category;
+      if (stage && stage !== 'all') query.stage = stage;
+      if (search) query.$text = { $search: search };
 
       let sortQuery = {};
       switch (sort) {
@@ -50,15 +112,17 @@ class ProjectController {
           .skip(skip)
           .limit(parseInt(limit))
           .lean(),
-        Project.countDocuments(query)
+        Project.countDocuments(query),
       ]);
 
-      const projectsWithUserData = projects.map(project => ({
+      const projectsWithUserData = projects.map((project) => ({
         ...project,
-        hasUpvoted: req.user ? project.upvotes.some(id => id.toString() === req.user._id.toString()) : false,
-        hasExpressedInterest: req.user ? project.interestedInvestors.some(i => i.user.toString() === req.user._id.toString()) : false,
+        hasUpvoted: req.user ? project.upvotes.some((id) => id.toString() === req.user._id.toString()) : false,
+        hasExpressedInterest: req.user
+          ? project.interestedInvestors.some((i) => i.user.toString() === req.user._id.toString())
+          : false,
         upvotes: undefined,
-        interestedInvestors: undefined
+        interestedInvestors: undefined,
       }));
 
       res.json({
@@ -70,56 +134,61 @@ class ProjectController {
             limit: parseInt(limit),
             total,
             pages: Math.ceil(total / limit),
-            hasMore: skip + projects.length < total
-          }
-        }
+            hasMore: skip + projects.length < total,
+          },
+        },
       });
     } catch (error) {
       console.error('Get projects error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch projects'
+        message: 'Failed to fetch projects',
       });
     }
   }
 
-  // GET featured projects
   async getFeaturedProjects(req, res) {
     try {
-      const projects = await Project.getFeaturedProjects(6);
-      
+      const projects = await Project.find({ isPublished: true })
+        .sort({ upvoteCount: -1, viewCount: -1 })
+        .limit(6)
+        .populate('creator', 'fullName profilePicture school major initials')
+        .lean();
+
       res.json({
         success: true,
-        data: projects
+        data: projects,
       });
     } catch (error) {
       console.error('Get featured projects error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch featured projects'
+        message: 'Failed to fetch featured projects',
       });
     }
   }
 
-  // GET trending projects
   async getTrendingProjects(req, res) {
     try {
-      const projects = await Project.getTrendingProjects(10);
-      
+      const projects = await Project.find({ isPublished: true })
+        .sort({ lastActivityAt: -1, upvoteCount: -1 })
+        .limit(10)
+        .populate('creator', 'fullName profilePicture school major initials')
+        .lean();
+
       res.json({
         success: true,
-        data: projects
+        data: projects,
       });
     } catch (error) {
       console.error('Get trending projects error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch trending projects'
+        message: 'Failed to fetch trending projects',
       });
     }
   }
 
-  // GET single project
   async getProjectById(req, res) {
     try {
       const project = await Project.findById(req.params.id)
@@ -129,69 +198,33 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
-      await project.incrementViews();
+      await project.updateOne({ $inc: { viewCount: 1 } });
 
       const projectData = project.toObject();
-      projectData.hasUpvoted = req.user ? project.hasUpvoted(req.user._id) : false;
-      projectData.hasExpressedInterest = req.user ? project.hasExpressedInterest(req.user._id) : false;
-      
+      projectData.hasUpvoted = req.user ? project.upvotes.some((id) => id.toString() === req.user._id.toString()) : false;
+      projectData.hasExpressedInterest = req.user
+        ? project.interestedInvestors.some((i) => i.user.toString() === req.user._id.toString())
+        : false;
       delete projectData.upvotes;
       delete projectData.interestedInvestors;
 
       res.json({
         success: true,
-        data: projectData
+        data: projectData,
       });
     } catch (error) {
       console.error('Get project error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch project'
+        message: 'Failed to fetch project',
       });
     }
   }
 
-  // POST create new project
-  async createProject(req, res) {
-    try {
-      const projectData = {
-        ...req.body,
-        creator: req.user._id
-      };
-
-      const project = new Project(projectData);
-      await project.save();
-
-      await project.populate('creator', 'fullName profilePicture school major initials');
-
-      res.status(201).json({
-        success: true,
-        message: 'Project created successfully',
-        data: project
-      });
-    } catch (error) {
-      console.error('Create project error:', error);
-      
-      if (error.name === 'ValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(e => e.message)
-        });
-      }
-      
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create project'
-      });
-    }
-  }
-
-  // PUT update project
   async updateProject(req, res) {
     try {
       const project = await Project.findById(req.params.id);
@@ -199,41 +232,42 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
       if (project.creator.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
-          message: 'You can only edit your own projects'
+          message: 'You can only edit your own projects',
         });
       }
 
-      Object.keys(req.body).forEach(key => {
+      Object.keys(req.body).forEach((key) => {
         if (key !== 'creator' && key !== 'upvotes' && key !== 'interestedInvestors') {
           project[key] = req.body[key];
         }
       });
 
+      project.updatedAt = new Date();
+      project.lastActivityAt = new Date();
       await project.save();
       await project.populate('creator', 'fullName profilePicture school major initials');
 
       res.json({
         success: true,
         message: 'Project updated successfully',
-        data: project
+        data: project,
       });
     } catch (error) {
       console.error('Update project error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update project'
+        message: 'Failed to update project',
       });
     }
   }
 
-  // DELETE project
   async deleteProject(req, res) {
     try {
       const project = await Project.findById(req.params.id);
@@ -241,14 +275,14 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
       if (project.creator.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
-          message: 'You can only delete your own projects'
+          message: 'You can only delete your own projects',
         });
       }
 
@@ -256,18 +290,17 @@ class ProjectController {
 
       res.json({
         success: true,
-        message: 'Project deleted successfully'
+        message: 'Project deleted successfully',
       });
     } catch (error) {
       console.error('Delete project error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete project'
+        message: 'Failed to delete project',
       });
     }
   }
 
-  // POST toggle upvote
   async toggleUpvote(req, res) {
     try {
       const project = await Project.findById(req.params.id);
@@ -275,29 +308,36 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
-      const upvoted = await project.toggleUpvote(req.user._id);
+      const index = project.upvotes.indexOf(req.user._id);
+      if (index === -1) {
+        project.upvotes.push(req.user._id);
+      } else {
+        project.upvotes.splice(index, 1);
+      }
+      project.upvoteCount = project.upvotes.length;
+      project.lastActivityAt = new Date();
+      await project.save();
 
       res.json({
         success: true,
         data: {
-          upvoted,
-          upvoteCount: project.upvoteCount
-        }
+          upvoted: index === -1,
+          upvoteCount: project.upvoteCount,
+        },
       });
     } catch (error) {
       console.error('Upvote error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to process upvote'
+        message: 'Failed to process upvote',
       });
     }
   }
 
-  // POST express interest
   async expressInterest(req, res) {
     try {
       const { message } = req.body;
@@ -306,37 +346,45 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
-      await project.addInterest(req.user._id, message);
+      const alreadyInterested = project.interestedInvestors.some(
+        (i) => i.user.toString() === req.user._id.toString()
+      );
+      if (alreadyInterested) {
+        return res.status(400).json({
+          success: false,
+          message: 'You have already expressed interest in this project',
+        });
+      }
+
+      project.interestedInvestors.push({
+        user: req.user._id,
+        message,
+        createdAt: new Date(),
+      });
+      project.interestCount = project.interestedInvestors.length;
+      project.lastActivityAt = new Date();
+      await project.save();
 
       res.json({
         success: true,
         message: 'Interest expressed successfully',
         data: {
-          interestCount: project.interestCount
-        }
+          interestCount: project.interestCount,
+        },
       });
     } catch (error) {
       console.error('Express interest error:', error);
-      
-      if (error.message.includes('already expressed interest')) {
-        return res.status(400).json({
-          success: false,
-          message: error.message
-        });
-      }
-      
       res.status(500).json({
         success: false,
-        message: 'Failed to express interest'
+        message: 'Failed to express interest',
       });
     }
   }
 
-  // GET project comments
   async getComments(req, res) {
     try {
       const { page = 1, limit = 20 } = req.query;
@@ -349,18 +397,18 @@ class ProjectController {
           .skip(skip)
           .limit(parseInt(limit))
           .lean(),
-        Comment.countDocuments({ project: req.params.id, isDeleted: false })
+        Comment.countDocuments({ project: req.params.id, isDeleted: false }),
       ]);
 
-      const processedComments = comments.map(comment => {
+      const processedComments = comments.map((comment) => {
         if (comment.isAnonymous) {
           return {
             ...comment,
             author: {
               fullName: 'Anonymous',
               initials: '?',
-              profilePicture: null
-            }
+              profilePicture: null,
+            },
           };
         }
         return comment;
@@ -374,20 +422,19 @@ class ProjectController {
             page: parseInt(page),
             limit: parseInt(limit),
             total,
-            hasMore: skip + comments.length < total
-          }
-        }
+            hasMore: skip + comments.length < total,
+          },
+        },
       });
     } catch (error) {
       console.error('Get comments error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch comments'
+        message: 'Failed to fetch comments',
       });
     }
   }
 
-  // POST add comment
   async addComment(req, res) {
     try {
       const { content, isAnonymous = false } = req.body;
@@ -395,7 +442,7 @@ class ProjectController {
       if (!content || content.trim().length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'Comment content is required'
+          message: 'Comment content is required',
         });
       }
 
@@ -403,7 +450,7 @@ class ProjectController {
       if (!project) {
         return res.status(404).json({
           success: false,
-          message: 'Project not found'
+          message: 'Project not found',
         });
       }
 
@@ -411,36 +458,39 @@ class ProjectController {
         project: req.params.id,
         author: req.user._id,
         content,
-        isAnonymous
+        isAnonymous,
       });
 
       await comment.save();
       await comment.populate('author', 'fullName profilePicture school initials');
+
+      project.commentCount += 1;
+      project.lastActivityAt = new Date();
+      await project.save();
 
       const commentData = comment.toObject();
       if (commentData.isAnonymous) {
         commentData.author = {
           fullName: 'Anonymous',
           initials: '?',
-          profilePicture: null
+          profilePicture: null,
         };
       }
 
       res.status(201).json({
         success: true,
         message: 'Comment added successfully',
-        data: commentData
+        data: commentData,
       });
     } catch (error) {
       console.error('Add comment error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to add comment'
+        message: 'Failed to add comment',
       });
     }
   }
 
-  // DELETE comment
   async deleteComment(req, res) {
     try {
       const comment = await Comment.findById(req.params.commentId);
@@ -448,33 +498,39 @@ class ProjectController {
       if (!comment) {
         return res.status(404).json({
           success: false,
-          message: 'Comment not found'
+          message: 'Comment not found',
         });
       }
 
       if (comment.author.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
-          message: 'You can only delete your own comments'
+          message: 'You can only delete your own comments',
         });
       }
 
-      await comment.softDelete();
+      comment.isDeleted = true;
+      await comment.save();
+
+      const project = await Project.findById(req.params.projectId);
+      if (project) {
+        project.commentCount = Math.max(0, project.commentCount - 1);
+        await project.save();
+      }
 
       res.json({
         success: true,
-        message: 'Comment deleted successfully'
+        message: 'Comment deleted successfully',
       });
     } catch (error) {
       console.error('Delete comment error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete comment'
+        message: 'Failed to delete comment',
       });
     }
   }
 
-  // POST toggle comment like
   async toggleCommentLike(req, res) {
     try {
       const comment = await Comment.findById(req.params.commentId);
@@ -482,24 +538,31 @@ class ProjectController {
       if (!comment) {
         return res.status(404).json({
           success: false,
-          message: 'Comment not found'
+          message: 'Comment not found',
         });
       }
 
-      const liked = await comment.toggleLike(req.user._id);
+      const index = comment.likes.indexOf(req.user._id);
+      if (index === -1) {
+        comment.likes.push(req.user._id);
+      } else {
+        comment.likes.splice(index, 1);
+      }
+      comment.likeCount = comment.likes.length;
+      await comment.save();
 
       res.json({
         success: true,
         data: {
-          liked,
-          likeCount: comment.likeCount
-        }
+          liked: index === -1,
+          likeCount: comment.likeCount,
+        },
       });
     } catch (error) {
       console.error('Like comment error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to process like'
+        message: 'Failed to process like',
       });
     }
   }
