@@ -249,18 +249,23 @@ class AuthController {
       if (!email || !password) {
         return res.status(400).json({
           success: false,
-          message: 'Email and password are required'
+          message: 'Email/username and password are required'
         });
       }
 
+      const loginField = email.toLowerCase().trim();
+
       const user = await User.findOne({ 
-        email: email.toLowerCase().trim() 
+        $or: [
+          { email: loginField },
+          { username: loginField }
+        ]
       }).select('+password');
 
       if (!user) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password'
+          message: 'Invalid email/username or password'
         });
       }
 
@@ -279,7 +284,7 @@ class AuthController {
       if (!isPasswordValid) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password'
+          message: 'Invalid email/username or password'
         });
       }
 
@@ -287,6 +292,28 @@ class AuthController {
       jwtUtils.setAuthCookies(res, tokens);
 
       user.lastLogin = new Date();
+
+      // Auto-generate username if missing (for legacy users)
+      if (!user.username) {
+        let defaultUsername = user.email.split('@')[0].replace(/[^a-z0-9]/gi, '').substring(0, 20);
+        if (defaultUsername.length < 3) {
+          defaultUsername = `user${user._id.toString().substring(-6)}`;
+        }
+
+        let username = defaultUsername.toLowerCase();
+        let i = 1;
+        let existingUser;
+        while ((existingUser = await User.findOne({ 
+          username, 
+          _id: { $ne: user._id } 
+        })) && i < 100) {  // Prevent infinite loop
+          username = `${defaultUsername}${i}`;
+          i++;
+        }
+
+        user.username = username;
+      }
+
       await user.save();
 
       res.status(200).json({

@@ -61,9 +61,7 @@ export default function LoginPage() {
     const newErrors = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Email or username is required';
     }
 
     if (!formData.password) {
@@ -312,18 +310,18 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-teal-700 mb-1">
-                  Email Address
+                  Email or Username
                 </label>
                 <input
                   id="email"
                   name="email"
-                  type="email"
+                  type="text"
                   value={formData.email}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
                     errors.email ? 'border-red-500' : 'border-teal-100'
                   }`}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
