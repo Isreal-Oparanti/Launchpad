@@ -182,7 +182,7 @@ const ProjectsPage = () => {
         {/* Projects Page Content */}
         <div className="container mx-auto pb-20 md:pb-8">
           {/* Header - Sticky */}
-          <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm z-[9 ]">
+          <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm z-[9]">
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-3">
                 <div>
