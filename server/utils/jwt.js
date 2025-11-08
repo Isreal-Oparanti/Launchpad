@@ -5,7 +5,7 @@
     constructor() {
       this.accessTokenSecret = process.env.JWT_ACCESS_SECRET;
       this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-      this.accessTokenExpiry = process.env.JWT_ACCESS_EXPIRY || '15m';
+      this.accessTokenExpiry = process.env.JWT_ACCESS_EXPIRY || '2d';
       this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
       
       if (!this.accessTokenSecret || !this.refreshTokenSecret) {
@@ -96,7 +96,7 @@
   
   res.cookie('accessToken', tokens.accessToken, {
     ...cookieOptions,
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxAge: 240 * 60 * 1000, // 15 minutes
   });
 
   res.cookie('refreshToken', tokens.refreshToken, {

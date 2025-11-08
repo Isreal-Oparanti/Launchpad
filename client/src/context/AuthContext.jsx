@@ -1,3 +1,4 @@
+// @/context/AuthContext.js
 "use client";
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,10 +11,8 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-
   const fetchUser = async () => {
     try {
-
       const data = await authService.getCurrentUser();
       setUser(data.user);
       return true;
@@ -24,10 +23,8 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-
   const login = async (userData) => {
     try {
-
       setUser(userData);
       return true;
     } catch (error) {
@@ -36,20 +33,16 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-
   const logout = async () => {
     try {
-
       await authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-
       setUser(null);
       router.push('/login');
     }
   };
-
 
   useEffect(() => {
     const initializeAuth = async () => {

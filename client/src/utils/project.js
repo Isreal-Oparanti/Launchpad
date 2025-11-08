@@ -63,12 +63,21 @@ class ProjectService {
     return response.json();
   }
 
+  async getProjectMatches(projectId) {
+    const response = await fetch(`${this.baseURL}/matches/${projectId}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch matches');
+    }
+
+    return response.json();
+  }
+
   async createProject(formData) {
     const response = await fetch(`${this.baseURL}/projects/create`, {
       method: 'POST',
-      headers: {
-        // Do NOT set Content-Type; FormData sets multipart/form-data automatically
-      },
       credentials: 'include',
       body: formData,
     });
@@ -232,4 +241,5 @@ class ProjectService {
 }
 
 export const projectService = new ProjectService();
+
 export default projectService;
