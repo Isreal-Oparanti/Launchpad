@@ -22,5 +22,7 @@ router.post('/logout', optionalAuth, authController.logout.bind(authController))
 router.get('/me', authenticate, authController.getProfile.bind(authController));
 router.put('/profile', authenticate, authController.updateProfile.bind(authController));
 router.get('/check', authenticate, authController.checkAuth.bind(authController));
+router.put('/change-password', authenticate, authController.changePassword.bind(authController));
+router.delete('/delete-account', authenticate, authController.deleteAccount.bind(authController));
 
 module.exports = router;

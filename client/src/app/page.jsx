@@ -16,7 +16,6 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -24,7 +23,6 @@ export default function Home() {
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
 
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -40,11 +38,9 @@ export default function Home() {
   
   useEffect(() => {
     setIsVisible(true); 
-    // Preload important pages for faster navigation
     router.prefetch('/register');
     router.prefetch('/login');
     router.prefetch('/dashboard');
-    
     
     const interval = setInterval(() => {
       setCurrentFeature(prev => (prev + 1) % 3);
@@ -52,9 +48,6 @@ export default function Home() {
     
     return () => clearInterval(interval);
   }, [router]);
-  
-  
-  
   
   const handleNavigation = (path) => {
     router.push(path);
@@ -79,7 +72,6 @@ export default function Home() {
     button.appendChild(circle);
   };
   
-  
   const floatingAnimation = {
     animate: {
       y: [0, -15, 0],
@@ -90,18 +82,6 @@ export default function Home() {
       }
     }
   };
-  
-  const pulseAnimation = {
-    animate: {
-      scale: [1, 1.1, 1],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-  
   
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -125,32 +105,18 @@ export default function Home() {
     }
   };
 
-  
+  const StarIcon = () => (
+    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    </svg>
+  );
+
   const LaunchpadLogo = ({ size = "normal" }) => (
     <div className="flex items-center space-x-2 cursor-pointer">
       <span className={`font-poppins font-bold text-teal-900 ${size === "large" ? "text-5xl" : "text-xl"}`}>
-        Launch<span className="text-orange-500">pad</span>
+        FoundrG<span className="text-orange-500">eeks</span>
       </span>
     </div>
-  );
-
-  
-  const MicroGrantIcon = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-
-  const ProjectIcon = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-    </svg>
-  );
-
-  const OpportunityIcon = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
   );
 
   const UserIcon = () => (
@@ -171,17 +137,15 @@ export default function Home() {
     </svg>
   );
 
-  const HandshakeIcon = () => (
+  const BrainIcon = () => (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
     </svg>
   );
 
-  const GraduationIcon = () => (
+  const ConnectIcon = () => (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path d="M12 14l9-5-9-5-9 5 9 5z" />
-      <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
     </svg>
   );
 
@@ -235,7 +199,7 @@ export default function Home() {
         />
         
         {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
+        {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
             className={`absolute w-2 h-2 rounded-full ${
@@ -270,7 +234,7 @@ export default function Home() {
             : 'bg-transparent py-6'
         }`}
       >
-        <div className="container mx-auto px-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12 flex justify-between items-center">
           <motion.div 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
@@ -278,7 +242,7 @@ export default function Home() {
           </motion.div>
           
           <nav className="hidden md:flex space-x-8">
-            {['How it works', 'Spotlight', 'Opportunities', 'About'].map((item, index) => (
+            {['How it Works', 'Find Talent', 'For Founders', 'About'].map((item, index) => (
               <motion.a
                 key={item}
                 href={`#${item.toLowerCase().replace(' ', '-')}`}
@@ -305,7 +269,7 @@ export default function Home() {
               onClick={() => handleNavigation('/login')}
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
-              className="text-teal-700 hover:text-teal-900 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-teal-50 border border-teal-200"
+              className="text-teal-700 hover:text-teal-900 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-teal-50 border border-2 border-teal-600"
             >
               Login
             </motion.button>
@@ -316,7 +280,7 @@ export default function Home() {
               }}
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
-              className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <span className="relative z-10">Get Started</span>
               <style jsx>{`
@@ -341,49 +305,36 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden min-h-screen flex items-center">
-        {/* Floating Elements */}
-        <motion.div
-          className="absolute top-20 right-10 w-6 h-6 bg-teal-400 rounded-full opacity-60"
-          {...floatingAnimation}
-        />
-        <motion.div
-          className="absolute bottom-20 left-10 w-8 h-8 bg-orange-400 rounded-full opacity-40"
-          {...floatingAnimation}
-          transition={{ delay: 1 }}
-        />
-        
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
             {/* Text Content */}
             <motion.div 
-              className="lg:w-1/2"
+              className="w-full lg:w-1/2"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.h1 
-                className="text-4xl md:text-5xl lg:text-6xl font-poppins font-bold text-teal-900 leading-tight mb-6"
+                className="text-xl md:text-4xl lg:text-5xl font-poppins font-bold text-teal-900 leading-tight mb-6"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Students Modern <span className="text-orange-500">Innovators</span> Park
+                Build Your Team, Join the <span className="text-orange-500"> Innovators Network</span>, All with AI Matching 
               </motion.h1>
               
               <motion.p 
-                className="text-xl text-teal-700 mb-8 leading-relaxed"
+                className="text-lg text-teal-700 mb-8 leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                Showcase your projects, meet collaborators, and get funding. A community designed for the next generation of innovators.
+                Our intelligent matching algorithm connects visionary founders with skilled professionals to build the next generation of innovative startups.
               </motion.p>
-              
-              {/* Animated Feature Rotator */}
               
               {/* CTA Buttons */}
               <motion.div 
-                className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4"
+                className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-8"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
@@ -398,18 +349,7 @@ export default function Home() {
                   className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
                 >
                   <span className="relative z-10 flex items-center justify-center">
-                    Start Your Journey 
-                    <motion.svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-6 w-6 ml-2"
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </motion.svg>
+                    Find Your Match
                   </span>
                 </motion.button>
                 
@@ -419,49 +359,89 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                   className="border-2 border-teal-600 text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-md hover:shadow-lg"
                 >
-                  I Already Have an Account
+                  Sign In
                 </motion.button>
               </motion.div>
               
               {/* Trust Badge */}
               <motion.div 
-                className="mt-8 flex items-center space-x-4 text-sm text-teal-600"
+                className="flex items-center space-x-4 text-sm text-teal-600"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 1 }}
               >
                 <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full border border-teal-200/50">
                   <div className="flex -space-x-2">
-                    {[1, 2, 3].map((i) => (
-                      <motion.div 
-                        key={i}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 1 + i * 0.1 }}
-                        className="w-8 h-8 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full border-2 border-white shadow-sm"
-                      />
-                    ))}
+                    {/* Mixed gender young people - 6 profiles - mostly black, mix of boys and girls */}
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1 }}
+                      src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young black woman"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.1 }}
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young white man"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.2 }}
+                      src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young black woman"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.3 }}
+                      src="https://images.unsplash.com/photo-1507591064344-4c6ce005b128?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young black man"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.4 }}
+                      src="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young white woman"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
+                    <motion.img 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.5 }}
+                      src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
+                      alt="Young black man"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
+                    />
                   </div>
-                  <span className="font-medium">Join 500+ student innovators</span>
+                  <span className="font-medium">Join 500+ innovators</span>
                 </div>
               </motion.div>
             </motion.div>
             
             {/* Project Card Demo */}
             <motion.div 
-              className="lg:w-1/2 relative"
+              className="w-full lg:w-1/2 relative mt-8 lg:mt-0"
               initial={{ opacity: 0, x: 50, rotateY: 10 }}
               animate={{ opacity: 1, x: 0, rotateY: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
               <motion.div 
-                className="relative z-10"
-                whileHover={{ scale: 1.02, y: -5 }}
+                className="relative z-10 w-full"
+                whileHover={{ scale: isMobile ? 1 : 1.02, y: isMobile ? 0 : -5 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 {/* Main Project Card */}
-                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border border-white/50">
-                  <div className="h-72 rounded-xl overflow-hidden relative">
+                <div className="bg-white/80 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border border-white/50 w-full">
+                  <div className="h-64 md:h-72 rounded-xl overflow-hidden relative">
                     <img 
                       src="https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
                       alt="AI Project" 
@@ -476,7 +456,7 @@ export default function Home() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.8 }}
                         >
-                          EduTrack AI
+                          NeuralStyle AI
                         </motion.h3>
                         <motion.p 
                           className="text-teal-100"
@@ -484,27 +464,32 @@ export default function Home() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 1 }}
                         >
-                          Smart attendance system using low-cost beacons
+                          Advanced style transfer using deep learning
                         </motion.p>
                       </div>
                     </div>
                     <div className="absolute top-4 left-4 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">AI Tech</div>
                     <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center">
-                      <motion.span 
-                        className="w-2 h-2 bg-white rounded-full mr-1"
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                      />
+                      <span className="w-2 h-2 bg-white rounded-full mr-1" />
                       Live Demo
                     </div>
                   </div>
                   <div className="p-4">
                     <div className="flex items-center mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full flex items-center justify-center font-bold text-white">A</div>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white overflow-hidden">
+                        <img 
+                          src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80" 
+                          alt="Chisom Udonsi" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <div className="ml-3">
-                        <p className="font-medium text-teal-900">Amina O. (OAU)</p>
+                        <p className="font-medium text-teal-900">Chisom Udonsi</p>
                         <div className="flex items-center text-sm text-teal-500">
-                          <span>⭐ 4.8 • 42 Sparks</span>
+                          <div className="flex items-center">
+                            <StarIcon />
+                            <span className="ml-1">4.8 • 42 Sparks</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -520,66 +505,13 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                
-                {/* Floating Elements Around Card */}
-                <motion.div 
-                  className="absolute -top-4 -right-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl shadow-lg z-20 border border-white/50"
-                  {...floatingAnimation}
-                >
-                  <div className="flex items-center">
-                    <motion.div 
-                      className="w-3 h-3 bg-orange-500 rounded-full mr-2"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    <span className="text-sm font-semibold">Funding Available</span>
-                  </div>
-                </motion.div>
-                
-             
               </motion.div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <motion.section 
-        className="py-16 bg-white/80 backdrop-blur-sm relative z-10"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="container mx-auto px-4">
-          <motion.p 
-            className="text-center text-teal-600 text-sm mb-8 font-medium"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            Trusted by university partners worldwide
-          </motion.p>
-          <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center">
-            {['Google for Startups', 'Microsoft Learn', 'Intel AI', 'AWS Educate', 'OAU Alumni Fund', 'TechCampus'].map((partner, index) => (
-              <motion.div 
-                key={index}
-                className="h-12 w-32 bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg flex items-center justify-center font-bold text-teal-700 transition-all duration-300 hover:shadow-md hover:scale-105 cursor-pointer border border-teal-100"
-                whileHover={{ y: -5 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                {partner}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </motion.section>
-
-      {/* How It Works */}
+      {/* Features Section */}
       <motion.section 
         id="how-it-works"
         className="py-20 bg-gradient-to-b from-teal-50 to-blue-50 relative z-10"
@@ -588,7 +520,7 @@ export default function Home() {
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -596,8 +528,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-poppins font-bold text-teal-900 mb-4">How It Works</h2>
-            <p className="text-teal-600 max-w-2xl mx-auto text-lg">Getting your project noticed has never been easier. Just follow these three simple steps.</p>
+            <h2 className="text-3xl font-poppins font-bold text-teal-900 mb-4">How AI Matching Works</h2>
+            <p className="text-teal-600 max-w-2xl mx-auto text-lg">Our intelligent algorithm analyzes skills, goals, and compatibility to create perfect founder teams</p>
           </motion.div>
           
           <motion.div 
@@ -609,28 +541,22 @@ export default function Home() {
           >
             {[
               { 
-                step: '1', 
-                title: 'Create Your Profile', 
-                desc: 'Sign up in 30 seconds and verify your student status.',
-                icon: <UserIcon />,
-                color: 'from-blue-400 to-blue-500',
-                delay: 0.1
+                title: 'Smart Profile Analysis', 
+                desc: 'AI analyzes your skills, experience, and project goals to understand your unique strengths.',
+                icon: <BrainIcon />,
+                color: 'from-blue-400 to-blue-500'
               },
               { 
-                step: '2', 
-                title: 'Showcase Your Work', 
-                desc: 'Create a stunning project card with media, tags, and your story.',
-                icon: <LightbulbIcon />,
-                color: 'from-teal-400 to-teal-500',
-                delay: 0.2
+                title: 'Compatibility Matching', 
+                desc: 'Our algorithm matches you with complementary skills and aligned vision for maximum synergy.',
+                icon: <ConnectIcon />,
+                color: 'from-teal-400 to-teal-500'
               },
               { 
-                step: '3', 
-                title: 'Get Discovered', 
-                desc: 'Gain visibility through our platform and connect with opportunities.',
+                title: 'Launch Together', 
+                desc: 'Connect with your perfect match and start building your innovative startup immediately.',
                 icon: <RocketIcon />,
-                color: 'from-orange-400 to-orange-500',
-                delay: 0.3
+                color: 'from-orange-400 to-orange-500'
               }
             ].map((item, index) => (
               <motion.div 
@@ -640,7 +566,7 @@ export default function Home() {
                 className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg text-center transition-all duration-300 hover:shadow-xl group border border-white/50"
               >
                 <motion.div 
-                  className={`w-20 h-20 bg-gradient-to-r ${item.color} rounded-full flex items-center justify-center mx-auto mb-6 text-2xl group-hover:scale-110 transition-transform`}
+                  className={`w-20 h-20 bg-gradient-to-r ${item.color} rounded-full flex items-center justify-center mx-auto mb-6 text-2xl text-white group-hover:scale-110 transition-transform`}
                   whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.5 }}
                 >
@@ -648,57 +574,6 @@ export default function Home() {
                 </motion.div>
                 <h3 className="text-xl font-semibold text-teal-800 mb-4">{item.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{item.desc}</p>
-                <motion.div 
-                  className="mt-4 text-4xl font-bold text-teal-200"
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  transition={{ delay: item.delay }}
-                >
-                  {item.step}
-                </motion.div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </motion.section>
-
-      {/* Stats Section */}
-      <motion.section 
-        className="py-16 bg-white relative z-10"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="container mx-auto px-4">
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {[
-              { number: '500+', label: 'Active Projects', icon: <ProjectIcon />, color: 'from-teal-400 to-teal-500' },
-              { number: '₦2.5M+', label: 'Funding Distributed', icon: <MicroGrantIcon />, color: 'from-orange-400 to-orange-500' },
-              { number: '40+', label: 'Partner Organizations', icon: <HandshakeIcon />, color: 'from-blue-400 to-blue-500' },
-              { number: '12', label: 'Universities', icon: <GraduationIcon />, color: 'from-green-400 to-green-500' }
-            ].map((stat, index) => (
-              <motion.div 
-                key={index}
-                variants={itemVariants}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="text-center p-6 bg-gradient-to-br from-teal-50 to-blue-50 rounded-xl hover:shadow-lg transition-all duration-300 border border-teal-100"
-              >
-                <motion.div 
-                  className="text-4xl mb-2"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: index * 0.5 }}
-                >
-                  {stat.icon}
-                </motion.div>
-                <p className="text-4xl font-poppins font-bold text-teal-700 mb-2">{stat.number}</p>
-                <p className="text-teal-600 font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -707,51 +582,21 @@ export default function Home() {
 
       {/* Final CTA */}
       <motion.section 
-        className="py-20 bg-gradient-to-r from-teal-600 via-blue-600 to-teal-700 text-white relative overflow-hidden"
+        className="py-20 bg-gradient-to-br from-teal-600 to-teal-700 text-white relative overflow-hidden"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.6 }}
       >
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full"
-            animate={{
-              x: [0, 100, 0],
-              y: [0, 50, 0],
-              scale: [1, 1.5, 1],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.div
-            className="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full"
-            animate={{
-              x: [0, -100, 0],
-              y: [0, -50, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        </div>
-
-        <div className="container mx-auto px-4 text-center relative z-10">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12 text-center relative z-10">
           <motion.h2 
-            className="text-4xl font-poppins font-bold mb-6"
+            className="text-3xl font-poppins font-bold mb-6"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            Ready to Launch Your Innovation?
+            Ready to Find Your Perfect Match?
           </motion.h2>
           <motion.p 
             className="text-xl mb-10 max-w-2xl mx-auto text-teal-100"
@@ -760,7 +605,7 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Join hundreds of student innovators already showcasing their projects and getting real opportunities.
+            Join hundreds of founders and skilled professionals building the next generation of startups together.
           </motion.p>
           
           <motion.div 
@@ -777,9 +622,9 @@ export default function Home() {
               }}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="relative overflow-hidden bg-white text-teal-700 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+              className="relative overflow-hidden bg-white text-teal-700 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Start For Free Today
+              Start Matching Today
             </motion.button>
             
             <motion.button
@@ -791,89 +636,51 @@ export default function Home() {
               Sign In to Your Account
             </motion.button>
           </motion.div>
-
-          {/* Animated Logo */}
-          <motion.div
-            className="mt-12 flex justify-center"
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <LaunchpadLogo size="large" />
-          </motion.div>
         </div>
       </motion.section>
 
       {/* Footer */}
-      <footer className="bg-teal-900 text-teal-100 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
+      <footer className="bg-teal-900 text-teal-100 py-12">
+        <div className="container mx-auto px-4 lg:px-8 xl:px-12">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            {/* Logo and Socials */}
+            <div className="flex flex-col items-center md:items-start mb-6 md:mb-0">
               <div className="flex items-center mb-4">
-                <span className="font-semibold text-white text-xl">Launch<span className="text-orange-500">pad</span></span>
+                <span className="font-semibold text-white text-xl">Foundr<span className="text-orange-500">Geeks</span></span>
               </div>
-              <p className="text-teal-300 mb-4">The premier platform for university innovators to showcase projects, find collaborators, and secure funding.</p>
               <div className="flex space-x-4">
-                <a href="#" className="text-teal-300 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 002 18.407a11.616 11.616 0 006.29 1.84" />
+                {/* X (Twitter) Icon */}
+                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
-                <a href="#" className="text-teal-300 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                {/* Instagram Icon */}
+                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
                 </a>
-                <a href="#" className="text-teal-300 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+                {/* LinkedIn Icon */}
+                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                   </svg>
                 </a>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-white text-lg font-semibold mb-4">Platform</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">How it works</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Featured Projects</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Funding Opportunities</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Mentorship Program</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Success Stories</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-white text-lg font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">API</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Community</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Support</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-white text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Partners</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="text-teal-300 hover:text-white transition-colors">Privacy Policy</a></li>
-              </ul>
+            {/* Links */}
+            <div className="flex flex-wrap justify-center gap-6 text-sm">
+              <a href="#" className="text-teal-300 hover:text-white transition-colors">Terms of Service</a>
+              <a href="#" className="text-teal-300 hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="text-teal-300 hover:text-white transition-colors">Cookie Policy</a>
+              <a href="mailto:foundrgeeks@gmail.com" className="text-teal-300 hover:text-white transition-colors">Contact</a>
             </div>
           </div>
           
-          <div className="border-t border-teal-800 mt-12 pt-8 text-sm text-teal-400">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p>&copy; 2025 Launchpad. All rights reserved.</p>
-              <div className="flex space-x-6 mt-4 md:mt-0">
-                <a href="#" className="text-teal-400 hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="text-teal-400 hover:text-white transition-colors">Privacy Policy</a>
-                <a href="#" className="text-teal-400 hover:text-white transition-colors">Cookie Policy</a>
-              </div>
-            </div>
+          <div className="border-t border-teal-800 mt-8 pt-6 text-sm text-teal-400 text-center">
+            <p>&copy; 2025 FoundrGeeks. All rights reserved.</p>
           </div>
         </div>
       </footer>

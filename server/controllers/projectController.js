@@ -37,6 +37,16 @@ class ProjectController {
         }
       }
 
+      let neededRoles = [];
+      if (req.body.neededRoles) {
+        try {
+          neededRoles = typeof req.body.neededRoles === 'string' ? JSON.parse(req.body.neededRoles) : req.body.neededRoles;
+        } catch (e) {
+          console.error('Failed to parse neededRoles:', e);
+          neededRoles = [];
+        }
+      }
+
       const projectData = {
         title: req.body.title,
         tagline: req.body.tagline,
@@ -47,13 +57,11 @@ class ProjectController {
         stage: req.body.stage,
         tags,
         demoUrl: req.body.demoUrl || '',
+        neededRoles: neededRoles.length > 0 ? neededRoles : undefined,
         creator: req.user._id,
         isPublished: req.body.isPublished === 'true',
         logo: req.files?.logo ? { data: req.files.logo[0].buffer, contentType: req.files.logo[0].mimetype } : null,
         coverImage: req.files?.coverImage ? { data: req.files.coverImage[0].buffer, contentType: req.files.coverImage[0].mimetype } : null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastActivityAt: new Date(),
         upvoteCount: 0,
         viewCount: 0,
         commentCount: 0,
@@ -62,14 +70,15 @@ class ProjectController {
 
       console.log('Project data before saving:', projectData);
 
-      const project = await Project.create(projectData);
-      await project.populate('creator', 'fullName profilePicture school major initials');
+      const newProject = new Project(projectData);
 
-      console.log('✅ Project created successfully:', project._id);
+      await newProject.save();
+
+      console.log('✅ Project created successfully:', newProject._id);
 
       res.status(201).json({
         success: true,
-        data: project,
+        data: newProject,
         message: 'Project created successfully',
       });
     } catch (error) {
@@ -225,39 +234,70 @@ class ProjectController {
     }
   }
 
-  async updateProject(req, res) {
+ async updateProject(req, res) {
     try {
-      const project = await Project.findById(req.params.id);
+      const existingProject = await Project.findById(req.params.id);
 
-      if (!project) {
+      if (!existingProject) {
         return res.status(404).json({
           success: false,
           message: 'Project not found',
         });
       }
 
-      if (project.creator.toString() !== req.user._id.toString()) {
+      if (existingProject.creator.toString() !== req.user._id.toString()) {
         return res.status(403).json({
           success: false,
           message: 'You can only edit your own projects',
         });
       }
 
-      Object.keys(req.body).forEach((key) => {
-        if (key !== 'creator' && key !== 'upvotes' && key !== 'interestedInvestors') {
-          project[key] = req.body[key];
+      // Parse tags if provided
+      if (req.body.tags) {
+        try {
+          existingProject.tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
+        } catch (e) {
+          console.error('Failed to parse tags:', e);
+        }
+      }
+
+      // Parse neededRoles if provided
+      if (req.body.neededRoles) {
+        try {
+          existingProject.neededRoles = typeof req.body.neededRoles === 'string' ? JSON.parse(req.body.neededRoles) : req.body.neededRoles;
+        } catch (e) {
+          console.error('Failed to parse neededRoles:', e);
+        }
+      }
+
+      // Update other fields
+      const updatableFields = [
+        'title', 'tagline', 'problemStatement', 'solution', 'targetMarket', 
+        'category', 'stage', 'demoUrl', 'isPublished'
+      ];
+      updatableFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+          existingProject[field] = req.body[field];
         }
       });
 
-      project.updatedAt = new Date();
-      project.lastActivityAt = new Date();
-      await project.save();
-      await project.populate('creator', 'fullName profilePicture school major initials');
+      // Update images if provided
+      if (req.files?.logo) {
+        existingProject.logo = { data: req.files.logo[0].buffer, contentType: req.files.logo[0].mimetype };
+      }
+      if (req.files?.coverImage) {
+        existingProject.coverImage = { data: req.files.coverImage[0].buffer, contentType: req.files.coverImage[0].mimetype };
+      }
+
+      existingProject.updatedAt = new Date();
+      existingProject.lastActivityAt = new Date();
+      await existingProject.save();
+      await existingProject.populate('creator', 'fullName profilePicture school major initials');
 
       res.json({
         success: true,
         message: 'Project updated successfully',
-        data: project,
+        data: existingProject,
       });
     } catch (error) {
       console.error('Update project error:', error);
@@ -268,6 +308,7 @@ class ProjectController {
     }
   }
 
+  
   async deleteProject(req, res) {
     try {
       const project = await Project.findById(req.params.id);

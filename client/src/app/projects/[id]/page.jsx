@@ -77,6 +77,17 @@ const ProjectDetailPage = () => {
       <div className="md:ml-64">
         <Header title={project.title} subtitle={project.tagline} />
         <div className="max-w-4xl mx-auto px-4 py-8 pb-20 md:pb-8">
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-teal-600 font-medium mb-6 hover:text-teal-700 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Projects
+          </button>
+
           {/* Cover Image with Logo */}
           {project.coverImage && (
             <div className="relative h-48 md:h-64 bg-gradient-to-br from-teal-100 to-blue-100">
@@ -213,6 +224,51 @@ const ProjectDetailPage = () => {
                     </ul>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Team Needs Section */}
+            {project.neededRoles?.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Open Team Roles ({project.neededRoles.length})
+                </h3>
+                <div className="space-y-4">
+                  {project.neededRoles.map((role, idx) => (
+                    <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-gray-900">{role.role}</h4>
+                        <span className="px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-md">
+                          {role.preferredLocation}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">Required Skills:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {role.requiredSkills.map((skill, sIdx) => (
+                          <span key={sIdx} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-2">Commitment: {role.commitment}</p>
+                      <p className="text-xs text-gray-600 mt-1">Equity: {role.equity}</p>
+                      {role.description && (
+                        <p className="text-xs text-gray-600 mt-2">Description: {role.description}</p>
+                      )}
+                      <button
+                        onClick={() => {
+                          alert(`Reaching out for ${role.role} role - Manual contact to creator`);
+                        }}
+                        className="mt-3 w-full py-2 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 transition-colors"
+                      >
+                        Reach Out for this Role
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

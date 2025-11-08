@@ -1,7 +1,8 @@
-const User = require('../models/User');
 const { jwtUtils } = require('../utils/jwt');
 const emailService = require('../utils/email');
 const validator = require('validator');
+const User = require('../models/User');
+const Project = require('../models/Project')
 
 class AuthController {
   async register(req, res) {
@@ -421,100 +422,150 @@ class AuthController {
     }
   }
 
-  async updateProfile(req, res) {
-    try {
-      const { fullName, username, school, major, profilePicture, bio } = req.body;
-      const user = await User.findById(req.user.id);
 
-      const errors = {};
-      
-      // Validate username if provided
-      if (username && username !== user.username) {
-        if (username.trim().length < 3) {
-          errors.username = 'Username must be at least 3 characters';
-        } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-          errors.username = 'Username can only contain letters, numbers, and underscores';
-        } else {
-          // Check if username is taken
-          const existingUser = await User.findOne({ 
-            username: username.trim().toLowerCase(),
-            _id: { $ne: user._id }
-          });
-          if (existingUser) {
-            errors.username = 'Username already taken';
-          }
+
+async updateProfile(req, res) {
+  try {
+    const { 
+      fullName, 
+      username, 
+      school, 
+      major, 
+      profilePicture, 
+      bio, 
+      location, 
+      skills, 
+      interests, 
+      hobbies, 
+      personalityTraits, 
+      openToCollaboration,
+      currentPosition,
+      website,
+      linkedinUrl,
+      githubUrl,
+      twitterUrl,
+      expertise,
+      collaborationProfile
+    } = req.body;
+    
+    const user = await User.findById(req.user.id);
+
+    const errors = {};
+    
+    // Validate username if provided
+    if (username && username !== user.username) {
+      if (username.trim().length < 3) {
+        errors.username = 'Username must be at least 3 characters';
+      } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        errors.username = 'Username can only contain letters, numbers, and underscores';
+      } else {
+        // Check if username is taken
+        const existingUser = await User.findOne({ 
+          username: username.trim().toLowerCase(),
+          _id: { $ne: user._id }
+        });
+        if (existingUser) {
+          errors.username = 'Username already taken';
         }
       }
+    }
 
-      if (fullName && (!fullName.trim() || fullName.trim().length === 0)) {
-        errors.fullName = 'Full name is required';
-      }
-      
-      if (school && (!school.trim() || school.trim().length === 0)) {
-        errors.school = 'School is required';
-      }
+    if (fullName && (!fullName.trim() || fullName.trim().length === 0)) {
+      errors.fullName = 'Full name is required';
+    }
+    
+    if (school && (!school.trim() || school.trim().length === 0)) {
+      errors.school = 'School is required';
+    }
 
-      if (Object.keys(errors).length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors
-        });
-      }
-
-      // Update fields if provided
-      if (fullName) user.fullName = fullName.trim();
-      if (username && !errors.username) user.username = username.trim().toLowerCase();
-      if (school) user.school = school.trim();
-      if (major !== undefined) user.major = major?.trim() || null;
-      if (profilePicture !== undefined) user.profilePicture = profilePicture;
-      if (bio !== undefined) user.bio = bio?.trim() || null;
-
-      await user.save();
-
-      res.status(200).json({
-        success: true,
-        message: 'Profile updated successfully',
-        user: {
-          id: user._id,
-          email: user.email,
-          username: user.username,
-          fullName: user.fullName,
-          school: user.school,
-          major: user.major,
-          profilePicture: user.profilePicture,
-          bio: user.bio,
-          isEmailVerified: user.isEmailVerified,
-          profileCompleted: user.profileCompleted,
-          role: user.role,
-          initials: user.initials
-        }
-      });
-    } catch (error) {
-      console.error('Update profile error:', error);
-      
-      if (error.name === 'ValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation error',
-          errors: Object.values(error.errors).map(e => e.message)
-        });
-      }
-      
-      if (error.code === 11000) {
-        return res.status(409).json({
-          success: false,
-          message: 'Username already taken'
-        });
-      }
-      
-      res.status(500).json({
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({
         success: false,
-        message: 'Failed to update profile'
+        message: 'Validation failed',
+        errors
       });
     }
-  }
 
+    // Update basic fields
+    if (fullName) user.fullName = fullName.trim();
+    if (username && !errors.username) user.username = username.trim().toLowerCase();
+    if (school) user.school = school.trim();
+    if (major !== undefined) user.major = major?.trim() || null;
+    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+    if (bio !== undefined) user.bio = bio?.trim() || null;
+    if (location !== undefined) user.location = location?.trim() || null;
+    if (skills !== undefined) user.skills = skills || [];
+    if (interests !== undefined) user.interests = interests || [];
+    if (hobbies !== undefined) user.hobbies = hobbies || [];
+    if (personalityTraits !== undefined) user.personalityTraits = personalityTraits || [];
+    if (openToCollaboration !== undefined) user.openToCollaboration = openToCollaboration;
+    
+    // Update new profile fields
+    if (currentPosition !== undefined) user.currentPosition = currentPosition?.trim() || null;
+    if (website !== undefined) user.website = website?.trim() || null;
+    if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl?.trim() || null;
+    if (githubUrl !== undefined) user.githubUrl = githubUrl?.trim() || null;
+    if (twitterUrl !== undefined) user.twitterUrl = twitterUrl?.trim() || null;
+    if (expertise !== undefined) user.expertise = expertise || [];
+    if (collaborationProfile !== undefined) user.collaborationProfile = collaborationProfile;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        fullName: user.fullName,
+        school: user.school,
+        major: user.major,
+        currentPosition: user.currentPosition,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
+        location: user.location,
+        website: user.website,
+        linkedinUrl: user.linkedinUrl,
+        githubUrl: user.githubUrl,
+        twitterUrl: user.twitterUrl,
+        skills: user.skills,
+        interests: user.interests,
+        expertise: user.expertise,
+        hobbies: user.hobbies,
+        personalityTraits: user.personalityTraits,
+        openToCollaboration: user.openToCollaboration,
+        collaborationProfile: user.collaborationProfile,
+        isEmailVerified: user.isEmailVerified,
+        profileCompleted: user.profileCompleted,
+        role: user.role,
+        initials: user.initials
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: Object.values(error.errors).map(e => e.message)
+      });
+    }
+    
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Username already taken'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile'
+    });
+  }
+}
   async checkAuth(req, res) {
     try {
       res.status(200).json({
@@ -530,6 +581,92 @@ class AuthController {
       });
     }
   }
+
+// Add these methods to your AuthController class
+
+async changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters'
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if current password is correct
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+}
+
+async deleteAccount(req, res) {
+  try {
+    const userId = req.user.id;
+
+    // Delete all user's projects (if you have a Project model)
+    
+    await Project.deleteMany({ userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    // Clear cookies
+    jwtUtils.clearAuthCookies(res);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account'
+    });
+  }
+}
+
 }
 
 module.exports = AuthController;

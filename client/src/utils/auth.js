@@ -101,23 +101,72 @@ class AuthService {
   }
 
   async updateProfile(profileData) {
-    const response = await fetch(`${this.baseURL}/auth/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(profileData),
-    });
+    try {
+      console.log('Updating profile with data:', profileData);
+      console.log('Request URL:', `${this.baseURL}/auth/profile`);
+      
+      const response = await fetch(`${this.baseURL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(profileData),
+      });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Profile update failed');
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        console.error('Update profile failed:', data);
+        throw new Error(data.message || `Profile update failed with status ${response.status}`);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
     }
-    
-    return data;
   }
+
+  
+
+async changePassword(passwordData) {
+  const response = await fetch(`${this.baseURL}/auth/change-password`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(passwordData),
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Password change failed');
+  }
+  
+  return data;
+}
+
+async deleteAccount() {
+  const response = await fetch(`${this.baseURL}/auth/delete-account`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Account deletion failed');
+  }
+  
+  return data;
+}
 }
 
 export const authService = new AuthService();

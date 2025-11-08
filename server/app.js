@@ -13,6 +13,8 @@ const app = express();
 
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes'); 
+const notificationRoutes = require('./routes/notificationRoutes');  
+const matchesRoutes = require('./routes/matchRoutes');
 // ======================
 // Environment Configuration
 // ======================
@@ -166,6 +168,8 @@ if (!isProduction) {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes); 
+app.use('/api/notifications', notificationRoutes); 
+app.use('/api/matches', matchesRoutes);
 
 // 404 handler
 app.use((req, res) => {
