@@ -18,7 +18,6 @@ export default function LoginPage() {
   const timeoutRef = useRef(null);
 
   const router = useRouter();
-  // Move useUser to the top level - this is correct
   const { fetchUser } = useUser();
 
   // Detect mobile screens
@@ -74,7 +73,6 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fixed handleSubmit - no hooks called inside
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -84,19 +82,14 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      // Login via authService (this sets the cookie)
       await authService.login(formData);
-      
-      // Fetch user from context using the hook we already called at top level
       await fetchUser();
       
-      // Show success message
       setLoginSuccess(true);
       
-      // Redirect to dashboard
       timeoutRef.current = setTimeout(() => {
         setLoginSuccess(false);
-        router.push('/dashboard');
+        router.push('/projects');
       }, 2000);
 
     } catch (error) {
@@ -123,22 +116,16 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-6 text-white text-center relative overflow-hidden"
+            className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-6 text-white text-center"
           >
-            {/* Animated background elements */}
-            <div className="absolute top-0 left-0 w-full h-full">
-              <div className="absolute top-4 right-4 w-12 h-12 bg-orange-400/20 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-4 left-4 w-8 h-8 bg-teal-300/30 rounded-full animate-bounce delay-700"></div>
-              <div className="absolute top-1/2 left-1/4 w-6 h-6 bg-white/10 rounded-full animate-pulse delay-1000"></div>
-            </div>
-
-            <div className="relative z-10">
+            <div>
               <h1 className="text-3xl font-bold mb-2">Welcome to</h1>
               <div className="text-4xl font-extrabold">
-                <span className="text-teal-200">Launch</span>
-                <span className="text-orange-400">pad</span>
+               <span className="text-teal-200">Foun
+                     <span className="text-orange-400">dr</span>Geeks
+                     </span>
               </div>
-              <p className="text-teal-100 mt-2">Showcase your projects and connect with innovators</p>
+              
             </div>
           </motion.div>
         )}
@@ -150,64 +137,9 @@ export default function LoginPage() {
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="w-full md:w-2/5 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-8 text-white flex flex-col justify-center items-center relative overflow-hidden"
+              className="w-full md:w-2/5 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-8 text-white flex flex-col justify-center items-center"
             >
-              {/* Animated background elements */}
-              <div className="absolute inset-0">
-                <motion.div
-                  animate={{
-                    rotate: 360,
-                    scale: [1, 1.1, 1]
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                  className="absolute top-8 right-8 w-16 h-16 bg-orange-400/20 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    y: [0, -20, 0],
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute bottom-12 left-8 w-12 h-12 bg-teal-300/30 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 180, 360]
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute top-1/3 left-1/4 w-8 h-8 bg-white/10 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    x: [0, 30, 0],
-                    opacity: [0.2, 0.5, 0.2]
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute bottom-1/3 right-1/4 w-6 h-6 bg-orange-300/20 rounded-full"
-                ></motion.div>
-              </div>
-
-              <div className="relative z-10 text-center">
+              <div className="text-center">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -216,8 +148,9 @@ export default function LoginPage() {
                 >
                   <h1 className="text-3xl lg:text-4xl font-bold mb-3">Welcome to</h1>
                   <div className="text-4xl lg:text-5xl font-extrabold">
-                    <span className="text-teal-200">Launch</span>
-                    <span className="text-orange-400">pad</span>
+                     <span className="text-teal-200">Foun
+                     <span className="text-orange-400">dr</span>Geeks
+                     </span>
                   </div>
                 </motion.div>
 
@@ -229,7 +162,7 @@ export default function LoginPage() {
                 >
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-orange-400 rounded-full mr-2 animate-pulse"></div>
+                      <div className="w-3 h-3 bg-orange-400 rounded-full mr-2"></div>
                       <span className="text-teal-100 font-medium">Connect with innovators</span>
                     </div>
                     <p className="text-teal-200 text-sm">Join thousands of student creators</p>
@@ -237,7 +170,7 @@ export default function LoginPage() {
 
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse delay-500"></div>
+                      <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
                       <span className="text-teal-100 font-medium">Showcase your projects</span>
                     </div>
                     <p className="text-teal-200 text-sm">Get discovered by partners</p>
@@ -245,7 +178,7 @@ export default function LoginPage() {
 
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse delay-1000"></div>
+                      <div className="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
                       <span className="text-teal-100 font-medium">Access funding</span>
                     </div>
                     <p className="text-teal-200 text-sm">Micro-grants and opportunities</p>
@@ -271,7 +204,7 @@ export default function LoginPage() {
                   </svg>
                   <div>
                     <h3 className="font-bold text-lg">Login Successful!</h3>
-                    <p className="mt-1">Redirecting to dashboard...</p>
+                    <p className="mt-1">Redirecting...</p>
                   </div>
                 </motion.div>
               )}
@@ -319,7 +252,7 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-teal-100'
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your email or username"
                 />
@@ -337,7 +270,7 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.password ? 'border-red-500' : 'border-teal-100'
+                    errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your password"
                 />
@@ -349,7 +282,7 @@ export default function LoginPage() {
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3,10 3s8.268 2.943,9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -384,7 +317,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-6 text-center text-xs text-teal-500">
-              <p>By continuing, you agree to our <a href="#" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="#" className="text-teal-600 hover:underline">Privacy Policy</a></p>
+              <p>By continuing, you agree to our <a href="terms-of-service" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="/privacy-policy" className="text-teal-600 hover:underline">Privacy Policy</a></p>
             </div>
           </div>
         </div>

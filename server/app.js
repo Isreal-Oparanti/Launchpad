@@ -15,6 +15,7 @@ const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes'); 
 const notificationRoutes = require('./routes/notificationRoutes');  
 const matchesRoutes = require('./routes/matchRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 // ======================
 // Environment Configuration
 // ======================
@@ -170,7 +171,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes); 
 app.use('/api/notifications', notificationRoutes); 
 app.use('/api/matches', matchesRoutes);
-
+app.use('/api/messages', messageRoutes);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({

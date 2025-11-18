@@ -10,8 +10,7 @@ export default function RegisterPage() {
     password: '',
     fullName: '',
     username: '',
-    school: '',
-    major: ''
+    title: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,8 +84,8 @@ export default function RegisterPage() {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    if (!formData.school) {
-      newErrors.school = 'School is required';
+    if (!formData.title.trim()) {
+      newErrors.title = 'Role/Title is required';
     }
 
     setErrors(newErrors);
@@ -127,17 +126,6 @@ export default function RegisterPage() {
     </svg>
   );
 
-  const schools = [
-    'Obafemi Awolowo University',
-    'University of Lagos',
-    'University of Ibadan',
-    'Covenant University',
-    'University of Nigeria',
-    'Ahmadu Bello University',
-    'University of Ilorin',
-    'Other'
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -145,21 +133,16 @@ export default function RegisterPage() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-6 text-white text-center relative overflow-hidden"
+            className="bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-6 text-white text-center"
           >
-            <div className="absolute top-0 left-0 w-full h-full">
-              <div className="absolute top-4 right-4 w-12 h-12 bg-orange-400/20 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-4 left-4 w-8 h-8 bg-teal-300/30 rounded-full animate-bounce delay-700"></div>
-              <div className="absolute top-1/2 left-1/4 w-6 h-6 bg-white/10 rounded-full animate-pulse delay-1000"></div>
-            </div>
-
-            <div className="relative z-10">
+            <div>
               <h1 className="text-3xl font-bold mb-2">Welcome to</h1>
               <div className="text-4xl font-extrabold">
-                <span className="text-teal-200">Launch</span>
-                <span className="text-orange-400">pad</span>
+                <span className="text-teal-200">Foun
+                     <span className="text-orange-400">dr</span>Geeks
+                     </span>
               </div>
-              <p className="text-teal-100 mt-2">Showcase your projects and connect with innovators</p>
+              
             </div>
           </motion.div>
         )}
@@ -170,63 +153,9 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className="w-full md:w-2/5 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-8 text-white flex flex-col justify-center items-center relative overflow-hidden"
+              className="w-full md:w-2/5 bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 p-8 text-white flex flex-col justify-center items-center"
             >
-              <div className="absolute inset-0">
-                <motion.div
-                  animate={{
-                    rotate: 360,
-                    scale: [1, 1.1, 1]
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "linear"
-                  }}
-                  className="absolute top-8 right-8 w-16 h-16 bg-orange-400/20 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    y: [0, -20, 0],
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute bottom-12 left-8 w-12 h-12 bg-teal-300/30 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 180, 360]
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute top-1/3 left-1/4 w-8 h-8 bg-white/10 rounded-full"
-                ></motion.div>
-
-                <motion.div
-                  animate={{
-                    x: [0, 30, 0],
-                    opacity: [0.2, 0.5, 0.2]
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute bottom-1/3 right-1/4 w-6 h-6 bg-orange-300/20 rounded-full"
-                ></motion.div>
-              </div>
-
-              <div className="relative z-10 text-center">
+              <div className="text-center">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -235,8 +164,9 @@ export default function RegisterPage() {
                 >
                   <h1 className="text-3xl lg:text-4xl font-bold mb-3">Welcome to</h1>
                   <div className="text-4xl lg:text-5xl font-extrabold">
-                    <span className="text-teal-200">Launch</span>
-                    <span className="text-orange-400">pad</span>
+                    <span className="text-teal-200">Foun
+                     <span className="text-orange-400">dr</span>Geeks
+                     </span>
                   </div>
                 </motion.div>
 
@@ -248,15 +178,15 @@ export default function RegisterPage() {
                 >
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-orange-400 rounded-full mr-2 animate-pulse"></div>
+                      <div className="w-3 h-3 bg-orange-400 rounded-full mr-2"></div>
                       <span className="text-teal-100 font-medium">Connect with innovators</span>
                     </div>
-                    <p className="text-teal-200 text-sm">Join thousands of student creators</p>
+                    <p className="text-teal-200 text-sm">Join thousands of creators</p>
                   </div>
 
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse delay-500"></div>
+                      <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
                       <span className="text-teal-100 font-medium">Showcase your projects</span>
                     </div>
                     <p className="text-teal-200 text-sm">Get discovered by partners</p>
@@ -264,10 +194,10 @@ export default function RegisterPage() {
 
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse delay-1000"></div>
-                      <span className="text-teal-100 font-medium">Access funding</span>
+                      <div className="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
+                      <span className="text-teal-100 font-medium">AI-powered matching</span>
                     </div>
-                    <p className="text-teal-200 text-sm">Micro-grants and opportunities</p>
+                    <p className="text-teal-200 text-sm">Find perfect collaborators</p>
                   </div>
                 </motion.div>
               </div>
@@ -301,10 +231,10 @@ export default function RegisterPage() {
               className="text-center mb-6"
             >
               <h2 className="text-2xl md:text-3xl font-bold text-teal-900 mb-2">
-                Join the Innovation Hub
+                Are you Ready to Build ?
               </h2>
               <p className="text-teal-600 text-sm md:text-base">
-                Start showcasing your projects today
+                Get started in 1 minite
               </p>
             </motion.div>
 
@@ -336,7 +266,7 @@ export default function RegisterPage() {
                   value={formData.fullName}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.fullName ? 'border-red-500' : 'border-teal-100'
+                    errors.fullName ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your full name"
                 />
@@ -354,7 +284,7 @@ export default function RegisterPage() {
                   value={formData.username}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.username ? 'border-red-500' : 'border-teal-100'
+                    errors.username ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter a unique username"
                 />
@@ -372,49 +302,29 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-teal-100'
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your email"
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="school" className="block text-sm font-medium text-teal-700 mb-1">
-                    School
-                  </label>
-                  <select
-                    id="school"
-                    name="school"
-                    value={formData.school}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                      errors.school ? 'border-red-500' : 'border-teal-100'
-                    }`}
-                  >
-                    <option value="">Select your school</option>
-                    {schools.map(school => (
-                      <option key={school} value={school}>{school}</option>
-                    ))}
-                  </select>
-                  {errors.school && <p className="mt-1 text-sm text-red-600">{errors.school}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="major" className="block text-sm font-medium text-teal-700 mb-1">
-                    Field of Study (Optional)
-                  </label>
-                  <input
-                    id="major"
-                    name="major"
-                    type="text"
-                    value={formData.major}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg border-2 border-teal-100 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors"
-                    placeholder="e.g. Computer Engineering"
-                  />
-                </div>
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-teal-700 mb-1">
+                  Your Role/Title
+                </label>
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
+                    errors.title ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="e.g., Product Designer, Web Developer, Entrepreneur"
+                />
+                {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
               </div>
 
               <div className="relative">
@@ -428,7 +338,7 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border-2 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-colors ${
-                    errors.password ? 'border-red-500' : 'border-teal-100'
+                    errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your password"
                 />
@@ -475,7 +385,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="mt-6 text-center text-xs text-teal-500">
-              <p>By continuing, you agree to our <a href="#" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="#" className="text-teal-600 hover:underline">Privacy Policy</a></p>
+              <p>By continuing, you agree to our <a href="terms-of-service" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="/privacy-policy" className="text-teal-600 hover:underline">Privacy Policy</a></p>
             </div>
           </div>
         </div>

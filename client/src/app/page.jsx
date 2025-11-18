@@ -9,11 +9,24 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
   const router = useRouter();
   
   useEffect(() => {
     setMounted(true);
+    // Simulate loading progress
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150);
+
+    return () => clearInterval(progressInterval);
   }, []);
 
   useEffect(() => {
@@ -113,8 +126,15 @@ export default function Home() {
 
   const LaunchpadLogo = ({ size = "normal" }) => (
     <div className="flex items-center space-x-2 cursor-pointer">
-      <span className={`font-poppins font-bold text-teal-900 ${size === "large" ? "text-5xl" : "text-xl"}`}>
-        FoundrG<span className="text-orange-500">eeks</span>
+      <span className={`font-poppins flex items-center justify-center font-bold text-teal-900 ${size === "small" ? "text-5xl" : "text-xl"}`}>
+        <span> 
+          <img 
+            src="favicon/android-chrome-512x512.png" 
+            alt="foundrgeeks logo" 
+            className={`object-cover ${size === "small" ? "w-16 h-16" : "w-11 h-11"}`}
+          />
+        </span>
+        <span className={size === "small" ? "" : ""}>Foun<span className="text-orange-500">dr</span>Geeks</span>  
       </span>
     </div>
   );
@@ -149,19 +169,27 @@ export default function Home() {
     </svg>
   );
 
-  if (!mounted) {
+  if (!mounted || loadingProgress < 100) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
         <div className="text-center">
-          <LaunchpadLogo size="large" />
-          <div className="mt-4 h-2 w-32 bg-teal-200 rounded-full overflow-hidden mx-auto">
+          <LaunchpadLogo size="small" />
+          <div className="mt-6 h-3 w-48 bg-teal-200 rounded-full overflow-hidden mx-auto relative">
             <motion.div 
-              className="h-full bg-teal-500 rounded-full"
+              className="h-full bg-gradient-to-r from-teal-500 to-teal-600 rounded-full"
               initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+              animate={{ width: `${loadingProgress}%` }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             />
           </div>
+          <motion.p 
+            className="mt-3 text-teal-700 font-medium"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            Just Get Started ~ Mark Zuckerberg.
+          </motion.p>
         </div>
       </div>
     );
@@ -230,8 +258,8 @@ export default function Home() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${
           isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' 
-            : 'bg-transparent py-6'
+            ? 'bg-white/95 backdrop-blur-md shadow-lg ' + (isMobile ? 'py-4' : 'py-3')
+            : 'bg-transparent ' + (isMobile ? 'py-4' : 'py-6')
         }`}
       >
         <div className="container mx-auto px-4 lg:px-8 xl:px-12 flex justify-between items-center">
@@ -260,7 +288,7 @@ export default function Home() {
           
           {/* Header Buttons */}
           <motion.div 
-            className="flex items-center space-x-4"
+            className="flex items-center space-x-3"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
@@ -269,7 +297,7 @@ export default function Home() {
               onClick={() => handleNavigation('/login')}
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
-              className="text-teal-700 hover:text-teal-900 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-teal-50 border border-2 border-teal-600"
+              className="text-teal-700 hover:text-teal-900 font-medium transition-colors px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-teal-50 border border-2 border-teal-600"
             >
               Login
             </motion.button>
@@ -280,7 +308,7 @@ export default function Home() {
               }}
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
-              className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-3 py-1.5 md:px-6 md:py-2.5 text-sm md:text-base rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <span className="relative z-10">Get Started</span>
               <style jsx>{`
@@ -290,7 +318,7 @@ export default function Home() {
                   background: rgba(255, 255, 255, 0.6);
                   transform: scale(0);
                   animation: ripple 0.6s linear;
-                }
+                } 
                 @keyframes ripple {
                   to {
                     transform: scale(4);
@@ -315,16 +343,16 @@ export default function Home() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.h1 
-                className="text-xl md:text-4xl lg:text-5xl font-poppins font-bold text-teal-900 leading-tight mb-6"
+                className="text-3xl md:text-4xl lg:text-5xl font-poppins font-bold text-teal-900 leading-tight mb-6"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                Build Your Team, Join the <span className="text-orange-500"> Innovators Network</span>, All with AI Matching 
+                Build Your Team, Join the <span className="text-orange-500">Innovators Network</span>, All with AI Matching 
               </motion.h1>
               
               <motion.p 
-                className="text-lg text-teal-700 mb-8 leading-relaxed"
+                className="text-base md:text-lg text-teal-700 mb-8 leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
@@ -332,9 +360,9 @@ export default function Home() {
                 Our intelligent matching algorithm connects visionary founders with skilled professionals to build the next generation of innovative startups.
               </motion.p>
               
-              {/* CTA Buttons */}
+              {/* CTA Buttons - Responsive */}
               <motion.div 
-                className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-8"
+                className="flex flex-row gap-3 mb-8"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
@@ -346,7 +374,7 @@ export default function Home() {
                   }}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  className="relative overflow-hidden flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-4 py-3 md:px-8 md:py-4 rounded-xl font-semibold text-sm md:text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
                 >
                   <span className="relative z-10 flex items-center justify-center">
                     Find Your Match
@@ -357,13 +385,13 @@ export default function Home() {
                   onClick={() => handleNavigation('/login')}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="border-2 border-teal-600 text-teal-700 hover:bg-teal-50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-md hover:shadow-lg"
+                  className="flex-1 border-2 border-teal-600 text-teal-700 hover:bg-teal-50 px-4 py-3 md:px-8 md:py-4 rounded-xl font-semibold text-sm md:text-lg transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   Sign In
                 </motion.button>
               </motion.div>
               
-              {/* Trust Badge */}
+              {/* Trust Badge - Nigerian Young People */}
               <motion.div 
                 className="flex items-center space-x-4 text-sm text-teal-600"
                 initial={{ opacity: 0 }}
@@ -372,57 +400,57 @@ export default function Home() {
               >
                 <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full border border-teal-200/50">
                   <div className="flex -space-x-2">
-                    {/* Mixed gender young people - 6 profiles - mostly black, mix of boys and girls */}
+                    {/* Nigerian young students - mix of boys and girls */}
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1 }}
-                      src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young black woman"
+                      src="https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=100&h=100&fit=crop&crop=faces"
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1.1 }}
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young white man"
+                      src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=faces"
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1.2 }}
-                      src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young black woman"
+                      src="https://media.istockphoto.com/id/2230295004/photo/smiling-african-teenager-sitting-on-study-desk-looking-at-the-camera.webp?a=1&b=1&s=612x612&w=0&k=20&c=rBddpLfPAoLxo6QotLfOL3Pes0KnmsE_CAlUWtg_V3U="
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1.3 }}
-                      src="https://images.unsplash.com/photo-1507591064344-4c6ce005b128?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young black man"
+                      src="https://plus.unsplash.com/premium_photo-1661777204046-d7fae72dbcdd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjV8fGJsYWNrJTIweW91bmclMjB3b21hbnxlbnwwfHwwfHx8MA%3D%3D"
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1.4 }}
-                      src="https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young white woman"
+                      src="/ayo.jpg"
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                     <motion.img 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1.5 }}
-                      src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80"
-                      alt="Young black man"
+                      src="https://images.unsplash.com/photo-1642929548399-4056fa2ec086?q=80&w=435&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                      alt="Nigerian student"
                       className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
                     />
                   </div>
-                  <span className="font-medium">Join 500+ innovators</span>
+                  <span className="font-medium text-xs md:text-sm">Join 500+ innovators</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -478,7 +506,7 @@ export default function Home() {
                     <div className="flex items-center mb-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white overflow-hidden">
                         <img 
-                          src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80" 
+                          src="https://images.unsplash.com/photo-1627244776093-31ac42439022?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mzh8fGJsYWNrJTIweW91bmclMjBkZXZlbG9wZXJ8ZW58MHx8MHx8fDA%3D" 
                           alt="Chisom Udonsi" 
                           className="w-full h-full object-cover"
                         />
@@ -641,50 +669,64 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-teal-900 text-teal-100 py-12">
-        <div className="container mx-auto px-4 lg:px-8 xl:px-12">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            {/* Logo and Socials */}
-            <div className="flex flex-col items-center md:items-start mb-6 md:mb-0">
-              <div className="flex items-center mb-4">
-                <span className="font-semibold text-white text-xl">Foundr<span className="text-orange-500">Geeks</span></span>
-              </div>
-              <div className="flex space-x-4">
-                {/* X (Twitter) Icon */}
-                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </a>
-                {/* Instagram Icon */}
-                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                  </svg>
-                </a>
-                {/* LinkedIn Icon */}
-                <a href="#" className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                  </svg>
-                </a>
-              </div>
-            </div>
-            
-            {/* Links */}
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <a href="#" className="text-teal-300 hover:text-white transition-colors">Terms of Service</a>
-              <a href="#" className="text-teal-300 hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="text-teal-300 hover:text-white transition-colors">Cookie Policy</a>
-              <a href="mailto:foundrgeeks@gmail.com" className="text-teal-300 hover:text-white transition-colors">Contact</a>
-            </div>
-          </div>
-          
-          <div className="border-t border-teal-800 mt-8 pt-6 text-sm text-teal-400 text-center">
-            <p>&copy; 2025 FoundrGeeks. All rights reserved.</p>
-          </div>
+  <div className="container mx-auto px-4 lg:px-8 xl:px-12">
+    <div className="flex flex-col md:flex-row justify-between items-center">
+      {/* Logo and Socials */}
+      <div className="flex flex-col items-center md:items-start mb-6 md:mb-0">
+        <div className="flex items-center mb-4">
+          <span className="font-semibold text-white text-xl">Foundr<span className="text-orange-500">Geeks</span></span>
         </div>
-      </footer>
-
+        <div className="flex space-x-4">
+          {/* X (Twitter) Icon */}
+          <a 
+            href="https://x.com/FoundrGeeks?t=Egv-5GP53cfrycrOVsRPwQ&s=08" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          {/* Instagram Icon */}
+          <a 
+            href="https://www.instagram.com/foundrgeeks?utm_source=qr&igsh=MXBnMDVpY28wMzI1bw%3D%3D" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          {/* LinkedIn Icon */}
+          <a 
+            href="https://www.instagram.com/foundrgeeks?utm_source=qr&igsh=MXBnMDVpY28wMzI1bw%3D%3D" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-300 hover:text-white transition-colors p-2 bg-teal-800 rounded-full"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      
+      {/* Links */}
+      <div className="flex flex-wrap justify-center gap-6 text-sm">
+        <a href="/terms-of-service" className="text-teal-300 hover:text-white transition-colors">Terms of Service</a>
+        <a href="/privacy-policy" className="text-teal-300 hover:text-white transition-colors">Privacy Policy</a>
+        <a href="#" className="text-teal-300 hover:text-white transition-colors">Cookie Policy</a>
+        <a href="/contact" className="text-teal-300 hover:text-white transition-colors">Contact</a>
+      </div>
+    </div>
+    
+    <div className="border-t border-teal-800 mt-8 pt-6 text-sm text-teal-400 text-center">
+      <p>&copy; 2025 FoundrGeeks. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
       {/* Floating Action Button for Mobile */}
       {isMobile && (
         <motion.div

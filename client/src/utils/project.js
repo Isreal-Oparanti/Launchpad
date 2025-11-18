@@ -227,8 +227,9 @@ class ProjectService {
     return data;
   }
 
+  // ✅ UPDATED: Changed endpoint from /users/me/projects to /projects/my-projects
   async getMyProjects() {
-    const response = await fetch(`${this.baseURL}/users/me/projects`, {
+    const response = await fetch(`${this.baseURL}/projects/my-projects`, {
       credentials: 'include',
     });
 

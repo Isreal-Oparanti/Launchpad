@@ -57,14 +57,18 @@ const userSchema = new mongoose.Schema({
   
   profilePicture: { type: String, default: null },
   
-  school: { type: String, required: [true, 'School is required'], trim: true },
-  
-  major: { type: String, trim: true, default: null },
+  title: { 
+    type: String, 
+    required: [true, 'Title/role is required'], 
+    trim: true,
+    maxLength: [100, 'Title cannot exceed 100 characters']
+  },
   
   bio: { type: String, maxLength: [500, 'Bio cannot exceed 500 characters'], default: null },
   
   skills: [{ type: String, trim: true }],
   interests: [{ type: String, trim: true }],
+  expertise: [{ type: String, trim: true }],
   location: { type: String, trim: true, default: null },
   openToCollaboration: { type: Boolean, default: false },
   hobbies: [{ type: String, trim: true }],
@@ -87,12 +91,10 @@ const userSchema = new mongoose.Schema({
     additionalNotes: { type: String, maxLength: 300 }
   },
 
-  currentPosition: { type: String, trim: true, default: null },
   website: { type: String, trim: true, default: null },
   linkedinUrl: { type: String, trim: true, default: null },
   githubUrl: { type: String, trim: true, default: null },
   twitterUrl: { type: String, trim: true, default: null },
-  expertise: [{ type: String, trim: true }],
 
   profileEmbedding: {
     type: [Number],
@@ -105,7 +107,7 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: { type: String, select: false },
   passwordResetExpires: { type: Date, select: false },
   lastLogin: { type: Date, default: Date.now },
-  role: { type: String, enum: ['student', 'admin', 'moderator'], default: 'student' },
+  role: { type: String, enum: ['user', 'admin', 'moderator'], default: 'user' },
   profileCompleted: { type: Boolean, default: false },
   termsAccepted: { type: Boolean, default: false },
   termsAcceptedAt: { type: Date }
@@ -130,7 +132,9 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ googleId: 1 });
-userSchema.index({ school: 1 });
+userSchema.index({ title: 1 });
+userSchema.index({ skills: 1 });
+userSchema.index({ interests: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Virtuals
@@ -160,7 +164,7 @@ userSchema.pre('save', function(next) {
     this.fullName &&
     this.username &&
     this.email &&
-    this.school &&
+    this.title &&
     this.isEmailVerified &&
     this.termsAccepted
   );
@@ -173,17 +177,17 @@ userSchema.pre('save', async function(next) {
   if (process.env.USE_AI_MATCHING !== 'true' || !embeddings) return next();
 
   // Only run if relevant fields changed
-  const fields = ['bio', 'skills', 'interests', 'expertise', 'currentPosition', 'collaborationProfile'];
+  const fields = ['bio', 'skills', 'interests', 'expertise', 'title', 'collaborationProfile'];
   const changed = fields.some(f => this.isModified(f));
   if (!changed) return next();
 
-  // Build rich text
+  // Build rich text for AI matching
   const parts = [
     this.bio || '',
+    this.title ? `Title: ${this.title}` : '',
     this.skills?.length ? `Skills: ${this.skills.join(', ')}` : '',
     this.interests?.length ? `Interests: ${this.interests.join(', ')}` : '',
     this.expertise?.length ? `Expertise: ${this.expertise.join(', ')}` : '',
-    this.currentPosition ? `Position: ${this.currentPosition}` : '',
   ];
 
   if (this.collaborationProfile) {

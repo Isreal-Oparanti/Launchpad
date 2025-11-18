@@ -194,42 +194,45 @@ projectSchema.pre('save', function(next) {
 // models/Project.js — ONLY CHANGE THIS PART
 // POST-SAVE: Only trigger if neededRoles is present AND not empty
 projectSchema.post('save', async function (doc, next) {
-  // Only run on first save (new project)
+  // CRITICAL: Only run on brand new projects (__v === 0 means first save)
   if (doc.__v !== 0) {
+    console.log('⏭️ Skipping match (not first save, __v =', doc.__v, ')');
     next();
     return;
   }
 
-  // ONLY if user actually asked for roles
+  // ONLY if user actually requested collaborators
   if (!doc.neededRoles || doc.neededRoles.length === 0) {
-    console.log('No neededRoles → Skipping matching (user choice)');
+    console.log('⏭️ Skipping match (no roles requested)');
     next();
     return;
   }
 
-  console.log('\nMATCHING TRIGGERED — USER REQUESTED COLLABORATORS');
+  console.log('\n🎯 MATCHING TRIGGERED — NEW PROJECT WITH ROLES');
   console.log('Project:', doc.title);
+  console.log('Creator:', doc.creator);
   console.log('Needed Roles:', doc.neededRoles.map(r => `${r.role} (${r.requiredSkills.join(', ')})`));
 
   try {
     const matches = await matchUsersToProject(doc, 5);
-    console.log('MATCHES FOUND:', matches.length);
+    console.log('✅ MATCHES FOUND:', matches.length);
 
-    if (matches.length > 0) {
-    const notif = new Notification({
+    if (matches.length > 0 && matches[0].userId) {
+      const notif = new Notification({
         user: doc.creator,
         type: 'match',
         title: `${matches.length} Match${matches.length > 1 ? 'es' : ''} for "${doc.title}"`,
-        description: 'AI found collaborators. Check now!',
-        link: `/projects/${doc._id}/matches`,
+        description: `We found ${matches.length} potential collaborator${matches.length > 1 ? 's' : ''} for your project!`,
+        link: `/projects/${doc._id}/matches`, // Direct to matches page
       });
       await notif.save();
-      console.log('NOTIFICATION SAVED:', notif._id);
+      console.log('✅ NOTIFICATION SAVED:', notif._id);
     } else {
-      console.log('No matches found — no notification sent');
+      console.log('⏭️ No valid matches — no notification sent');
     }
   } catch (err) {
-    console.error('MATCHING ERROR:', err.message);
+    console.error('❌ MATCHING ERROR:', err.message);
+    // Don't block project creation if matching fails
   }
 
   next();

@@ -16,19 +16,13 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCollabModal, setShowCollabModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('projects');
-  const [activeSidebarTab, setActiveSidebarTab] = useState('profile');
   const [loading, setLoading] = useState(false);
-  const [activeTabs, setActiveTabs] = useState('profile');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
     email: '',
-    school: '',
-    major: '',
-    currentPosition: '',
+    title: '',
     bio: '',
     location: '',
     website: '',
@@ -56,9 +50,7 @@ const ProfilePage = () => {
       fullName: user.fullName || '',
       username: user.username || '',
       email: user.email || '',
-      school: user.school || '',
-      major: user.major || '',
-      currentPosition: user.currentPosition || '',
+      title: user.title || '',
       bio: user.bio || '',
       location: user.location || '',
       website: user.website || '',
@@ -94,7 +86,7 @@ const ProfilePage = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+      alert('Please upload an image file (JPEG, PNG, etc.)');
       return;
     }
 
@@ -106,33 +98,58 @@ const ProfilePage = () => {
     setUploadingImage(true);
 
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-      uploadFormData.append('upload_preset', 'launchpad');
-
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      if (!cloudName) throw new Error('Cloudinary not configured');
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: 'POST', body: uploadFormData }
-      );
-
-      if (!response.ok) throw new Error('Upload failed');
-      const data = await response.json();
-
-      if (data.secure_url) {
-        const updateResponse = await authService.updateProfile({ profilePicture: data.secure_url });
-        if (updateResponse.success) {
-          await fetchUser();
-          setFormData(prev => ({ ...prev, profilePicture: data.secure_url }));
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result;
+          const updateResponse = await authService.updateProfile({ 
+            profilePicture: base64String 
+          });
+          
+          if (updateResponse.success) {
+            await fetchUser();
+            setFormData(prev => ({ ...prev, profilePicture: base64String }));
+            alert('Profile picture updated successfully!');
+          } else {
+            throw new Error(updateResponse.message || 'Failed to update profile picture');
+          }
+        } catch (error) {
+          console.error('Profile picture update error:', error);
+          alert(error.message || 'Failed to update profile picture');
+        } finally {
+          setUploadingImage(false);
         }
-      }
+      };
+      reader.onerror = () => {
+        alert('Failed to read image file');
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error('Image upload error:', error);
       alert('Failed to upload image');
-    } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    if (!confirm('Are you sure you want to remove your profile picture?')) return;
+
+    try {
+      const updateResponse = await authService.updateProfile({ 
+        profilePicture: null 
+      });
+      
+      if (updateResponse.success) {
+        await fetchUser();
+        setFormData(prev => ({ ...prev, profilePicture: '' }));
+        alert('Profile picture removed successfully!');
+      } else {
+        throw new Error(updateResponse.message || 'Failed to remove profile picture');
+      }
+    } catch (error) {
+      console.error('Remove profile picture error:', error);
+      alert(error.message || 'Failed to remove profile picture');
     }
   };
 
@@ -171,9 +188,7 @@ const ProfilePage = () => {
       fullName: user.fullName || '',
       username: user.username || '',
       email: user.email || '',
-      school: user.school || '',
-      major: user.major || '',
-      currentPosition: user.currentPosition || '',
+      title: user.title || '',
       bio: user.bio || '',
       location: user.location || '',
       website: user.website || '',
@@ -209,26 +224,18 @@ const ProfilePage = () => {
   if (userLoading || isProfileLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar
-        activeTab={activeTabs}
-        setActiveTab={setActiveTab}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-      />
+      <Header />
+      <Sidebar />
+      
       <div className="md:ml-64">
-       <Header
-          onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
-          mobileMenuOpen={mobileMenuOpen}
-        />
-        
-        <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
+        <div className="pt-[73px] max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
           {/* Profile Header */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
             <div className="flex items-start gap-4 mb-6">
@@ -242,7 +249,7 @@ const ProfilePage = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span>{user.initials}</span>
+                    <span>{user?.initials}</span>
                   )}
                 </div>
                 
@@ -263,6 +270,18 @@ const ProfilePage = () => {
                     </svg>
                   )}
                 </label>
+
+                {formData.profilePicture && (
+                  <button
+                    onClick={handleRemoveProfilePicture}
+                    className="absolute -bottom-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    title="Remove profile picture"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* Profile Info */}
@@ -285,15 +304,15 @@ const ProfilePage = () => {
                 {isEditing ? (
                   <input
                     type="text"
-                    name="currentPosition"
-                    value={formData.currentPosition}
+                    name="title"
+                    value={formData.title}
                     onChange={handleInputChange}
                     className="text-sm text-gray-600 w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none mb-2"
-                    placeholder="e.g., Software Engineer, Founder"
+                    placeholder="e.g., Product Designer, Web Developer, Entrepreneur"
                   />
                 ) : (
-                  user.currentPosition && (
-                    <p className="text-sm text-gray-600 mb-2">{user.currentPosition}</p>
+                  user.title && (
+                    <p className="text-sm text-gray-600 mb-2">{user.title}</p>
                   )
                 )}
               </div>
@@ -334,14 +353,14 @@ const ProfilePage = () => {
                   name="bio"
                   value={formData.bio}
                   onChange={handleInputChange}
-                  placeholder="Tell us about yourself..."
+                  placeholder="Tell us about yourself, your passions, and what you're working on..."
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none text-sm"
                   maxLength={500}
                 />
               ) : (
                 <p className="text-gray-700 text-sm leading-relaxed">
-                  {user.bio || "No bio yet. Add one to tell others about yourself."}
+                  {user.bio || "No bio yet. Add one to tell others about yourself and your work."}
                 </p>
               )}
             </div>
@@ -349,26 +368,32 @@ const ProfilePage = () => {
             {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <InfoItem 
-                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
-                label="Organization"
+                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" /></svg>}
+                label="Role/Title"
                 value={isEditing ? (
-                  <input type="text" name="school" value={formData.school} onChange={handleInputChange} className="w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none text-sm" />
-                ) : user.school}
-              />
-              
-              <InfoItem 
-                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" /></svg>}
-                label="Major/Field"
-                value={isEditing ? (
-                  <input type="text" name="major" value={formData.major} onChange={handleInputChange} className="w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none text-sm" placeholder="e.g., Computer Science" />
-                ) : user.major || 'Not specified'}
+                  <input 
+                    type="text" 
+                    name="title" 
+                    value={formData.title} 
+                    onChange={handleInputChange} 
+                    className="w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none text-sm" 
+                    placeholder="e.g., Product Designer, Developer"
+                  />
+                ) : user.title || 'Not specified'}
               />
               
               <InfoItem 
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
                 label="Location"
                 value={isEditing ? (
-                  <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none text-sm" placeholder="e.g., New York, NY" />
+                  <input 
+                    type="text" 
+                    name="location" 
+                    value={formData.location} 
+                    onChange={handleInputChange} 
+                    className="w-full border-b border-gray-300 focus:border-teal-600 focus:outline-none text-sm" 
+                    placeholder="e.g., Lagos, Nigeria" 
+                  />
                 ) : user.location || 'Not specified'}
               />
               
@@ -391,10 +416,10 @@ const ProfilePage = () => {
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-3">
-                    {user.website && <SocialLink href={user.website} icon="🌐" label="Website" />}
-                    {user.linkedinUrl && <SocialLink href={user.linkedinUrl} icon="💼" label="LinkedIn" />}
-                    {user.githubUrl && <SocialLink href={user.githubUrl} icon="💻" label="GitHub" />}
-                    {user.twitterUrl && <SocialLink href={user.twitterUrl} icon="🐦" label="Twitter" />}
+                    {user.website && <SocialLink href={user.website} platform="website" label="Website" />}
+                    {user.linkedinUrl && <SocialLink href={user.linkedinUrl} platform="linkedin" label="LinkedIn" />}
+                    {user.githubUrl && <SocialLink href={user.githubUrl} platform="github" label="GitHub" />}
+                    {user.twitterUrl && <SocialLink href={user.twitterUrl} platform="twitter" label="Twitter" />}
                   </div>
                 )}
               </div>
@@ -407,7 +432,7 @@ const ProfilePage = () => {
                 items={formData.expertise}
                 isEditing={isEditing}
                 onEdit={(val) => handleArrayInput('expertise', val)}
-                placeholder="e.g., Frontend Development, UI/UX Design"
+                placeholder="e.g., Frontend Development, UI/UX Design, Product Strategy"
                 color="teal"
               />
               
@@ -416,7 +441,7 @@ const ProfilePage = () => {
                 items={formData.skills}
                 isEditing={isEditing}
                 onEdit={(val) => handleArrayInput('skills', val)}
-                placeholder="e.g., React, Figma, Python"
+                placeholder="e.g., React, Figma, Python, Node.js"
                 color="blue"
               />
               
@@ -425,7 +450,7 @@ const ProfilePage = () => {
                 items={formData.interests}
                 isEditing={isEditing}
                 onEdit={(val) => handleArrayInput('interests', val)}
-                placeholder="e.g., Startups, EdTech, AI"
+                placeholder="e.g., AI, Web3, EdTech, Sustainability"
                 color="purple"
               />
             </div>
@@ -444,7 +469,7 @@ const ProfilePage = () => {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Open to Collaboration</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Enable this to match with potential co-founders and collaborators based on your profile, skills, and interests. We'll help you find the perfect teammates for your next project.
+                  Enable this to match with potential co-founders and collaborators based on your profile, skills, and interests.
                 </p>
                 {user.openToCollaboration && user.collaborationProfile && (
                   <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
@@ -533,7 +558,132 @@ const ProfilePage = () => {
   );
 };
 
-// Collaboration Preferences Modal
+// Helper Components
+const InfoItem = ({ icon, label, value }) => (
+  <div className="flex items-start gap-2">
+    <div className="text-gray-400 mt-0.5">{icon}</div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-500">{label}</p>
+      {typeof value === 'string' ? (
+        <p className="text-sm text-gray-900 truncate">{value}</p>
+      ) : (
+        value
+      )}
+    </div>
+  </div>
+);
+
+const SocialLink = ({ href, platform, label }) => {
+  const getIcon = (platform) => {
+    switch (platform) {
+      case 'website':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+        );
+      case 'linkedin':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+          </svg>
+        );
+      case 'github':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        );
+      case 'twitter':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+    >
+      {getIcon(platform)}
+      <span>{label}</span>
+    </a>
+  );
+};
+
+const TagSection = ({ title, items, isEditing, onEdit, placeholder, color }) => {
+  const colorClasses = {
+    teal: 'bg-teal-50 text-teal-700 border-teal-200',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    purple: 'bg-purple-50 text-purple-700 border-purple-200'
+  };
+
+  return (
+    <div>
+      <h4 className="text-sm font-semibold text-gray-700 mb-2">{title}</h4>
+      {isEditing ? (
+        <input
+          type="text"
+          defaultValue={items.join(', ')}
+          onBlur={(e) => onEdit(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm"
+          placeholder={placeholder}
+        />
+      ) : items.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item, idx) => (
+            <span key={idx} className={`px-3 py-1 rounded-full text-xs border ${colorClasses[color]}`}>
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">Not specified</p>
+      )}
+    </div>
+  );
+};
+
+const StatCard = ({ label, value }) => (
+  <div className="text-center">
+    <div className="text-2xl font-bold text-gray-900">{value}</div>
+    <div className="text-xs text-gray-600">{label}</div>
+  </div>
+);
+
+const ProjectCard = ({ project, onClick }) => (
+  <div 
+    onClick={onClick}
+    className="border border-gray-200 rounded-lg p-4 hover:border-teal-400 hover:shadow-md transition-all cursor-pointer"
+  >
+    <div className="flex items-start justify-between mb-2">
+      <h4 className="font-semibold text-gray-900 text-sm">{project.title}</h4>
+      <span className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full shrink-0 ml-2">
+        {project.stage}
+      </span>
+    </div>
+    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
+    <div className="flex items-center gap-4 text-xs text-gray-500">
+      <span className="flex items-center gap-1">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" /></svg>
+        {project.upvotes || 0}
+      </span>
+      <span className="flex items-center gap-1">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        {project.comments || 0}
+      </span>
+    </div>
+  </div>
+);
+
+// CollaborationModal component remains the same as in your original code
 const CollaborationModal = ({ onClose, initialData, onSave }) => {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -942,96 +1092,4 @@ const CollaborationModal = ({ onClose, initialData, onSave }) => {
   );
 };
 
-// Helper Components
-const InfoItem = ({ icon, label, value }) => (
-  <div className="flex items-start gap-2">
-    <div className="text-gray-400 mt-0.5">{icon}</div>
-    <div className="flex-1 min-w-0">
-      <p className="text-xs text-gray-500">{label}</p>
-      {typeof value === 'string' ? (
-        <p className="text-sm text-gray-900 truncate">{value}</p>
-      ) : (
-        value
-      )}
-    </div>
-  </div>
-);
-
-const SocialLink = ({ href, icon, label }) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
-  >
-    <span>{icon}</span>
-    <span>{label}</span>
-  </a>
-);
-
-const TagSection = ({ title, items, isEditing, onEdit, placeholder, color }) => {
-  const colorClasses = {
-    teal: 'bg-teal-50 text-teal-700 border-teal-200',
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
-    purple: 'bg-purple-50 text-purple-700 border-purple-200'
-  };
-
-  return (
-    <div>
-      <h4 className="text-sm font-semibold text-gray-700 mb-2">{title}</h4>
-      {isEditing ? (
-        <input
-          type="text"
-          defaultValue={items.join(', ')}
-          onBlur={(e) => onEdit(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm"
-          placeholder={placeholder}
-        />
-      ) : items.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {items.map((item, idx) => (
-            <span key={idx} className={`px-3 py-1 rounded-full text-xs border ${colorClasses[color]}`}>
-              {item}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-400">Not specified</p>
-      )}
-    </div>
-  );
-};
-
-const StatCard = ({ label, value }) => (
-  <div className="text-center">
-    <div className="text-2xl font-bold text-gray-900">{value}</div>
-    <div className="text-xs text-gray-600">{label}</div>
-  </div>
-);
-
-const ProjectCard = ({ project, onClick }) => (
-  <div 
-    onClick={onClick}
-    className="border border-gray-200 rounded-lg p-4 hover:border-teal-400 hover:shadow-md transition-all cursor-pointer"
-  >
-    <div className="flex items-start justify-between mb-2">
-      <h4 className="font-semibold text-gray-900 text-sm">{project.title}</h4>
-      <span className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full shrink-0 ml-2">
-        {project.stage}
-      </span>
-    </div>
-    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.description}</p>
-    <div className="flex items-center gap-4 text-xs text-gray-500">
-      <span className="flex items-center gap-1">
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" /></svg>
-        {project.upvotes || 0}
-      </span>
-      <span className="flex items-center gap-1">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-        {project.comments || 0}
-      </span>
-    </div>
-  </div>
-);
-
-export default ProfilePage; 
+export default ProfilePage;
