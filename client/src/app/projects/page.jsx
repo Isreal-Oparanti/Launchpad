@@ -10,7 +10,7 @@ import Header from '@/components/Header';
 const ProjectsPage = () => {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
-  
+ 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -28,6 +28,9 @@ const ProjectsPage = () => {
   const [activeTab, setActiveTab] = useState('projects');
 
   const observerTarget = useRef(null);
+
+  // Debounced search to prevent too many API calls
+  const debouncedSearch = useRef(null);
 
   const fetchProjects = useCallback(async (pageNum, isRefresh = false) => {
     try {
@@ -60,6 +63,28 @@ const ProjectsPage = () => {
     }
   }, [category, stage, searchQuery, sort]); 
 
+  // Debounced search effect
+  useEffect(() => {
+    if (debouncedSearch.current) {
+      clearTimeout(debouncedSearch.current);
+    }
+
+    debouncedSearch.current = setTimeout(() => {
+      fetchProjects(1, true);
+    }, 300);
+
+    return () => {
+      if (debouncedSearch.current) {
+        clearTimeout(debouncedSearch.current);
+      }
+    };
+  }, [searchQuery, fetchProjects]);
+
+  // Filter changes
+  useEffect(() => {
+    fetchProjects(1, true);
+  }, [category, stage, sort, fetchProjects]);
+
   // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -82,11 +107,6 @@ const ProjectsPage = () => {
       }
     };
   }, [hasMore, loading, page, fetchProjects]);
-
-  // Initial load and filter changes
-  useEffect(() => {
-    fetchProjects(1, true);
-  }, [fetchProjects]);
 
   // Handle upvote with optimistic update
   const handleUpvote = async (projectId) => {
@@ -130,39 +150,6 @@ const ProjectsPage = () => {
     }
   };
 
-  // Handle express interest
-  const handleExpressInterest = async (projectId) => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const response = await projectService.expressInterest(projectId, '');
-      
-      if (response.success) {
-        setProjects(prev => prev.map(p => {
-          if (p._id === projectId) {
-            return {
-              ...p,
-              hasExpressedInterest: true,
-              interestCount: response.data.interestCount
-            };
-          }
-          return p;
-        }));
-      }
-    } catch (error) {
-      console.error('Express interest error:', error);
-      // Check if unauthorized
-      if (error.response?.status === 401 || error.message?.includes('token')) {
-        router.push('/login');
-        return;
-      }
-      alert(error.message || 'Failed to express interest');
-    }
-  };
-
   const handleDeleteProject = async (projectId) => {
     try {
       const response = await projectService.deleteProject(projectId);
@@ -178,13 +165,13 @@ const ProjectsPage = () => {
 
   const getStageColor = (stage) => {
     const colors = {
-      'Idea': 'bg-purple-100 text-purple-700',
-      'Prototype': 'bg-blue-100 text-blue-700',
-      'MVP': 'bg-yellow-100 text-yellow-700',
-      'Beta': 'bg-orange-100 text-orange-700',
-      'Launched': 'bg-green-100 text-green-700'
+      'Idea': 'bg-purple-100 text-purple-700 border-purple-200',
+      'Prototype': 'bg-blue-100 text-blue-700 border-blue-200',
+      'MVP': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'Beta': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Launched': 'bg-green-100 text-green-700 border-green-200'
     };
-    return colors[stage] || 'bg-gray-100 text-gray-700';
+    return colors[stage] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   const ProjectCard = ({ project }) => {
@@ -194,24 +181,24 @@ const ProjectsPage = () => {
     return (
       <div
         onClick={() => router.push(`/projects/${project._id}`)}
-        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-teal-300"
       >
         {/* Cover Image with Logo */}
         {project.coverImage && (
-          <div className="relative h-48 bg-gradient-to-br from-teal-100 to-blue-100">
+          <div className="relative h-48 bg-gradient-to-br from-teal-50 to-blue-50 overflow-hidden">
             <img
               src={project.coverImage}
               alt={project.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
             />
             <div className="absolute top-3 right-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStageColor(project.stage)}`}>
+              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getStageColor(project.stage)}`}>
                 {project.stage}
               </span>
             </div>
             {/* Logo Badge */}
             {project.logo && (
-              <div className="absolute bottom-3 left-3 w-16 h-16 bg-white rounded-xl shadow-lg p-2 border-2 border-white">
+              <div className="absolute bottom-3 left-3 w-12 h-12 bg-white rounded-lg shadow-md p-1.5 border border-gray-100">
                 <img src={project.logo} alt={`${project.title} logo`} className="w-full h-full object-contain" />
               </div>
             )}
@@ -219,55 +206,70 @@ const ProjectsPage = () => {
         )}
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-5">
           {/* Title & Tagline */}
-          <h3 className="text-lg font-bold text-gray-900 mb-1">{project.title}</h3>
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{project.tagline}</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">{project.title}</h3>
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">{project.tagline}</p>
 
           {/* Problem Statement Preview */}
-          <p className="text-xs text-gray-500 mb-3 line-clamp-3">{project.problemStatement}</p>
+          <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">{project.problemStatement}</p>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-1.5 mb-4">
             {project.tags.slice(0, 3).map((tag, idx) => (
-              <span key={idx} className="px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-md">
+              <span key={idx} className="px-2.5 py-1 bg-teal-50 text-teal-700 text-xs rounded-md font-medium">
                 #{tag}
               </span>
             ))}
             {project.tags.length > 3 && (
-              <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded-md">
+              <span className="px-2.5 py-1 bg-gray-50 text-gray-500 text-xs rounded-md font-medium">
                 +{project.tags.length - 3}
               </span>
             )}
           </div>
 
-          {/* Needed Roles Badge */}
+          {/* Needed Roles Badge - Simplified */}
           {project.neededRoles?.length > 0 && (
-            <div className="mb-3">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 text-xs rounded-lg font-medium border border-orange-200">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                Seeking {project.neededRoles.length} Role{project.neededRoles.length > 1 ? 's' : ''}
+                {project.neededRoles.length} role{project.neededRoles.length > 1 ? 's' : ''} needed
               </span>
             </div>
           )}
 
           {/* Creator & Actions */}
-          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+          <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-100">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 router.push(`/profile/${project.creator._id}`);
               }}
-              className="flex items-center gap-2 hover:bg-gray-50 rounded-lg p-1 -ml-1 transition-colors"
+              className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors group"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                {project.creator.initials}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-teal-400 to-blue-500">
+                {project.creator.profilePicture ? (
+                  <img 
+                    src={project.creator.profilePicture} 
+                    alt={project.creator.fullName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-sm font-semibold">
+                    {project.creator.initials}
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">{project.creator.fullName}</p>
-                <p className="text-xs text-gray-500">{project.creator.title || 'Student Entrepreneur'}</p>
+              {console.log(project.creator)}
+              <div className="text-left">
+                <p className="text-sm font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">
+                  {project.creator.fullName}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {project.creator.title}
+                </p>
               </div>
             </button>
 
@@ -280,8 +282,8 @@ const ProjectsPage = () => {
                 }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${
                   project.hasUpvoted
-                    ? 'bg-red-50 text-red-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 <svg className="w-4 h-4" fill={project.hasUpvoted ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -290,29 +292,7 @@ const ProjectsPage = () => {
                 <span className="text-sm font-semibold">{project.upvoteCount}</span>
               </button>
 
-              {/* Interest Button */}
-              {!project.hasExpressedInterest ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleExpressInterest(project._id);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-all text-xs font-medium"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  I'm Interested
-                </button>
-              ) : (
-                <div className="flex items-center gap-1.5 px-3 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Interested
-                </div>
-              )}
-
+              {/* Owner Menu */}
               {isOwner && (
                 <div className="relative">
                   <button
@@ -320,9 +300,9 @@ const ProjectsPage = () => {
                       e.stopPropagation();
                       setShowMenu(!showMenu);
                     }}
-                    className="p-2 hover:bg-gray-100 rounded-full"
+                    className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
                   >
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                     </svg>
                   </button>
@@ -335,7 +315,7 @@ const ProjectsPage = () => {
                           setShowCreateModal(true);
                           setShowMenu(false);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -349,7 +329,7 @@ const ProjectsPage = () => {
                           setShowDeleteConfirm(true);
                           setShowMenu(false);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -363,23 +343,23 @@ const ProjectsPage = () => {
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              {project.viewCount}
-            </span>
-            {project.interestCount > 0 && (
-              <span className="flex items-center gap-1 text-teal-600 font-medium">
+          {/* Stats Row - Professional Alignment */}
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 font-medium">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                {project.interestCount}
+                {project.viewCount || 0} views
               </span>
-            )}
+              <span className="flex items-center gap-1.5 font-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                {project.commentCount || 0} comments
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -387,29 +367,30 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-sans">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* Main Content Area */}
-      <div className="md:ml-64 md:pt-0">
+      {/* Main Content Area - Full Width */}
+      <div className="md:ml-64">
         <Header />
         
-        {/* Projects Page Content */}
-        <div className="container mx-auto px-4 py-8 pb-20 md:pb-8">
+        {/* Projects Page Content - Full Width */}
+        <div className="w-full">
           {/* Header - Sticky */}
           <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm z-[9]">
-            <div className="px-4 py-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="px-6 py-6">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Discover Projects</h1>
-                  <p className="text-sm text-gray-500">Ideas changing campus</p>
+                  <h1 className="text-2xl font-bold text-gray-900">Explore Projects</h1>
+                  <p className="text-sm text-gray-500 mt-1">Discover innovative ideas and collaborations</p>
                 </div>
+                {/* Icon button for create project */}
                 <button
                   onClick={() => {
                     setSelectedProject(null);
                     setShowCreateModal(true);
                   }}
-                  className="bg-teal-600 text-white p-3 rounded-full shadow-lg active:scale-95 transition-transform"
+                  className="bg-teal-600 text-white p-3 rounded-full shadow-lg active:scale-95 transition-transform hover:bg-teal-700"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -417,129 +398,152 @@ const ProjectsPage = () => {
                 </button>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-                <svg className="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              {/* Search and Filters */}
+              <div className="flex items-center gap-4">
+                {/* Search Bar */}
+                <div className="flex-1 relative max-w-2xl">
+                  <input
+                    type="text"
+                    placeholder="Search projects by title, tags, or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white border border-gray-200 transition-all"
+                  />
+                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                {/* Filter Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  Filters
+                </button>
               </div>
 
-              {/* Filter Toggle */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="mt-2 flex items-center gap-2 text-sm text-teal-600 font-medium"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                Filters
-              </button>
+              {/* Filter Panel */}
+              {showFilters && (
+                <div className="mt-4 pb-2 border-t border-gray-100 pt-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Category:</span>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Health">Health</option>
+                        <option value="Education">Education</option>
+                        <option value="Agriculture">Agriculture</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Social Impact">Social Impact</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Stage:</span>
+                      <select
+                        value={stage}
+                        onChange={(e) => setStage(e.target.value)}
+                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="all">All Stages</option>
+                        <option value="Idea">Idea</option>
+                        <option value="Prototype">Prototype</option>
+                        <option value="MVP">MVP</option>
+                        <option value="Beta">Beta</option>
+                        <option value="Launched">Launched</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                      <select
+                        value={sort}
+                        onChange={(e) => setSort(e.target.value)}
+                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="recent">Most Recent</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="trending">Trending</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Projects Grid - 2 columns on desktop, 1 on mobile */}
+          <div className="px-6 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {projects.map((project) => (
+                <ProjectCard key={project._id} project={project} />
+              ))}
             </div>
 
-            {/* Filter Panel */}
-            {showFilters && (
-              <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50">
-                <div className="grid grid-cols-3 gap-2 mt-3">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg"
-                  >
-                    <option value="all">All</option>
-                    <option value="Technology">Tech</option>
-                    <option value="Health">Health</option>
-                    <option value="Education">Education</option>
-                    <option value="Agriculture">Agriculture</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Social Impact">Impact</option>
-                  </select>
+            {/* Loading Spinner */}
+            {loading && (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
+              </div>
+            )}
 
-                  <select
-                    value={stage}
-                    onChange={(e) => setStage(e.target.value)}
-                    className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg"
-                  >
-                    <option value="all">All Stages</option>
-                    <option value="Idea">Idea</option>
-                    <option value="Prototype">Prototype</option>
-                    <option value="MVP">MVP</option>
-                    <option value="Beta">Beta</option>
-                    <option value="Launched">Launched</option>
-                  </select>
+            {/* Infinite Scroll Trigger */}
+            {hasMore && !loading && (
+              <div ref={observerTarget} className="h-20 flex items-center justify-center">
+                <p className="text-sm text-gray-400">Loading more projects...</p>
+              </div>
+            )}
 
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg"
-                  >
-                    <option value="recent">Recent</option>
-                    <option value="popular">Popular</option>
-                    <option value="trending">Trending</option>
-                  </select>
+            {/* End of Results */}
+            {!hasMore && projects.length > 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-sm">You've reached the end of projects</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && projects.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                  </svg>
                 </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects found</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  {searchQuery || category !== 'all' || stage !== 'all' 
+                    ? "Try adjusting your search or filters to find more projects."
+                    : "Be the first to share your innovative project and inspire others!"
+                  }
+                </p>
+                {(searchQuery || category !== 'all' || stage !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setCategory('all');
+                      setStage('all');
+                      setSort('recent');
+                      setSearchQuery('');
+                    }}
+                    className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
               </div>
             )}
           </div>
-
-          {/* Projects Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 py-4">
-            {projects.map((project) => (
-              <ProjectCard key={project._id} project={project} />
-            ))}
-          </div>
-
-          {/* Loading Spinner */}
-          {loading && (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-teal-600 border-t-transparent"></div>
-            </div>
-          )}
-
-          {/* Infinite Scroll Trigger */}
-          {hasMore && !loading && (
-            <div ref={observerTarget} className="h-20 flex items-center justify-center">
-              <p className="text-sm text-gray-400">Loading more...</p>
-            </div>
-          )}
-
-          {/* End of Results */}
-          {!hasMore && projects.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">You've reached the end!</p>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && projects.length === 0 && (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects found</h3>
-              <p className="text-gray-500 mb-4">Try adjusting your filters or be the first to post!</p>
-              <button
-                onClick={() => {
-                  setCategory('all');
-                  setStage('all');
-                  setSort('recent');
-                  setSearchQuery('');
-                }}
-                className="px-6 py-2.5 bg-teal-600 text-white rounded-lg font-medium"
-              >
-                Clear Filters
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Create/Edit Project Modal */}
+        {/* Modals remain the same */}
         {showCreateModal && (
           <CreateProjectModal
             project={selectedProject}
@@ -560,13 +564,6 @@ const ProjectsPage = () => {
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative overflow-hidden">
-              {/* Cute background elements */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-0 w-32 h-32 bg-teal-200/20 rounded-full -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full translate-x-1/2 translate-y-1/2 animate-pulse delay-200"></div>
-              </div>
-              
-              {/* Cute icon */}
               <div className="text-center mb-4">
                 <svg className="w-16 h-16 mx-auto text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -575,26 +572,15 @@ const ProjectsPage = () => {
               
               <h3 className="text-xl font-bold text-teal-900 text-center mb-2">Project Published!</h3>
               <p className="text-teal-700 text-center mb-6">
-                Your innovative idea is now live on Launchpad. Our intelligent matching system is analyzing potential collaborators—expect top recommendations in your notifications soon!
+                Your Project is now live on FoundrGeeks.
               </p>
               
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="flex-1 py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors"
-                >
-                  Got it!
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    router.push('/notifications');
-                  }}
-                  className="flex-1 py-3 border-2 border-teal-600 text-teal-600 rounded-xl font-medium hover:bg-teal-50 transition-colors"
-                >
-                  View Notifications
-                </button>
-              </div>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition-colors"
+              >
+                Got it!
+              </button>
             </div>
           </div>
         )}
@@ -615,7 +601,7 @@ const ProjectsPage = () => {
                 </div>
               </div>
               <p className="text-gray-700 mb-6">
-                Are you sure you want to delete "<strong>{selectedProject.title}</strong>"? All data including comments, upvotes, and team information will be permanently removed.
+                Are you sure you want to delete "<strong>{selectedProject.title}</strong>"?
               </p>
               <div className="flex gap-3">
                 <button
@@ -642,7 +628,6 @@ const ProjectsPage = () => {
   );
 };
 
-// Create Project Modal Component
 const CreateProjectModal = ({ onClose, onSuccess, project }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({

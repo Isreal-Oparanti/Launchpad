@@ -1,16 +1,12 @@
 'use client';
 
 import { useUser } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
-export function Sidebar({
-  activeTab,
-  setActiveTab,
-  mobileMenuOpen,
-  setMobileMenuOpen,
-}) {
+export function Sidebar() {
   const { user, logout } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   const navigationItems = [
     {
@@ -36,7 +32,7 @@ export function Sidebar({
     {
       id: 'messages',
       label: 'Messages',
-      path: '/messages',
+      path: '/message',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -81,21 +77,17 @@ export function Sidebar({
     },
   ];
 
-  const handleNavigation = (item) => {
-    setActiveTab(item.id);
-    setMobileMenuOpen(false);
-    if (item.path) {
-      router.push(item.path);
-    }
+  const handleNavigation = (path) => {
+    router.push(path);
   };
 
-  const mobileNavItems = navigationItems.filter((i) =>
-    ['projects', 'opportunities', 'messages', 'profile'].includes(i.id)
-  );
+  const isActive = (path) => {
+    return pathname === path;
+  };
 
   return (
     <>
-      {/* ========== DESKTOP SIDEBAR ========== */}
+      {/* ========== DESKTOP SIDEBAR ONLY ========== */}
       <div className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-white flex-col border-r border-gray-200 z-30">
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-100">
@@ -117,14 +109,14 @@ export function Sidebar({
             {navigationItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleNavigation(item)}
+                onClick={() => handleNavigation(item.path)}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${
-                  activeTab === item.id
+                  isActive(item.path)
                     ? 'bg-teal-50 text-teal-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className={activeTab === item.id ? 'text-teal-600' : 'text-gray-500'}>
+                <div className={isActive(item.path) ? 'text-teal-600' : 'text-gray-500'}>
                   {item.icon}
                 </div>
                 <span className="flex-1 text-left">{item.label}</span>
@@ -143,14 +135,14 @@ export function Sidebar({
             {bottomItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleNavigation(item)}
+                onClick={() => handleNavigation(item.path)}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${
-                  activeTab === item.id
+                  isActive(item.path)
                     ? 'bg-teal-50 text-teal-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className={activeTab === item.id ? 'text-teal-600' : 'text-gray-500'}>
+                <div className={isActive(item.path) ? 'text-teal-600' : 'text-gray-500'}>
                   {item.icon}
                 </div>
                 <span>{item.label}</span>
@@ -170,121 +162,6 @@ export function Sidebar({
             </svg>
             <span>Sign Out</span>
           </button>
-        </div>
-      </div>
-
-      {/* ========== MOBILE OVERLAY ========== */}
-      {mobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* ========== MOBILE DRAWER (from right) ========== */}
-      <div
-        className={`md:hidden fixed top-0 right-0 h-full w-64 bg-white flex flex-col border-l border-gray-200 z-50 transform transition-transform duration-300 ease-in-out ${
-          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-gray-900">
-              Launch<span className="text-teal-600">pad</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4 px-3">
-          <nav className="space-y-1">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavigation(item)}
-                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${
-                  activeTab === item.id
-                    ? 'bg-teal-50 text-teal-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className={activeTab === item.id ? 'text-teal-600' : 'text-gray-500'}>
-                  {item.icon}
-                </div>
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge && (
-                  <span className="bg-teal-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-
-          <div className="my-4 border-t border-gray-100"></div>
-
-          <nav className="space-y-1">
-            {bottomItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavigation(item)}
-                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium transition-all ${
-                  activeTab === item.id
-                    ? 'bg-teal-50 text-teal-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <div className={activeTab === item.id ? 'text-teal-600' : 'text-gray-500'}>
-                  {item.icon}
-                </div>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Sign Out */}
-        <div className="p-3 border-t border-gray-100">
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-all"
-          >
-            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ========== MOBILE BOTTOM BAR ========== */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-        <div className="flex justify-around items-center h-16 px-2">
-          {mobileNavItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavigation(item)}
-              className={`relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[70px] ${
-                activeTab === item.id ? 'text-teal-600' : 'text-gray-500'
-              }`}
-            >
-              <div className="relative">
-                {item.icon}
-                {item.badge && (
-                  <span className="absolute -top-1 -right-1 bg-teal-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-              </div>
-              <span className="text-[11px] font-medium">{item.label}</span>
-            </button>
-          ))}
         </div>
       </div>
     </>

@@ -132,41 +132,68 @@ class AuthService {
     }
   }
 
-  
+  async changePassword(passwordData) {
+    const response = await fetch(`${this.baseURL}/auth/change-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(passwordData),
+    });
 
-async changePassword(passwordData) {
-  const response = await fetch(`${this.baseURL}/auth/change-password`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify(passwordData),
-  });
-
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Password change failed');
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Password change failed');
+    }
+    
+    return data;
   }
-  
-  return data;
-}
 
-async deleteAccount() {
-  const response = await fetch(`${this.baseURL}/auth/delete-account`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
+  async deleteAccount() {
+    const response = await fetch(`${this.baseURL}/auth/delete-account`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
 
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Account deletion failed');
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Account deletion failed');
+    }
+    
+    return data;
   }
-  
-  return data;
-}
+
+  // NEW METHODS FOR USER PROFILES
+  async getUserProfile(userId) {
+    const response = await fetch(`${this.baseURL}/auth/users/${userId}`, {
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch user profile');
+    }
+    
+    return data;
+  }
+
+  async getUserProjects(userId) {
+    const response = await fetch(`${this.baseURL}/auth/users/${userId}/projects`, {
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch user projects');
+    }
+    
+    return data;
+  }
 }
 
 export const authService = new AuthService();

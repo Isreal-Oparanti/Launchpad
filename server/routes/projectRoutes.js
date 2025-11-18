@@ -13,7 +13,9 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+
 router.get('/', optionalAuth, projectController.getAllProjects.bind(projectController));
+router.get('/my-projects', authenticate, projectController.getMyProjects.bind(projectController));
 router.get('/featured', projectController.getFeaturedProjects.bind(projectController));
 router.get('/trending', projectController.getTrendingProjects.bind(projectController));
 router.get('/:id', optionalAuth, projectController.getProjectById.bind(projectController));

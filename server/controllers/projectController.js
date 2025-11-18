@@ -1,7 +1,7 @@
 const Project = require('../models/Project');
 
 class ProjectController {
-  async createProject(req, res) {
+ async createProject(req, res) {
     try {
       console.log('===== CREATE PROJECT DEBUG =====');
       console.log('Headers:', req.headers);
@@ -91,15 +91,24 @@ class ProjectController {
     }
   }
 
-  async getAllProjects(req, res) {
+   async getAllProjects(req, res) {
     try {
       const { page = 1, limit = 12, category, stage, search, sort = 'recent' } = req.query;
       const skip = (page - 1) * limit;
       const query = { isPublished: true };
 
+      // Build query efficiently
       if (category && category !== 'all') query.category = category;
       if (stage && stage !== 'all') query.stage = stage;
-      if (search) query.$text = { $search: search };
+      
+      // Use regex for search instead of $text for better performance
+      if (search && search.trim()) {
+        query.$or = [
+          { title: { $regex: search, $options: 'i' } },
+          { tagline: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } }
+        ];
+      }
 
       let sortQuery = {};
       switch (sort) {
@@ -114,9 +123,13 @@ class ProjectController {
           sortQuery = { createdAt: -1 };
       }
 
+      // Select only necessary fields for performance
+      const selectFields = 'title tagline problemStatement stage category tags coverImage logo upvoteCount viewCount commentCount interestCount neededRoles createdAt lastActivityAt creator';
+
       const [projects, total] = await Promise.all([
         Project.find(query)
-          .populate('creator', 'fullName profilePicture school major initials')
+          .select(selectFields)
+          .populate('creator', 'fullName profilePicture title initials') // Added title field
           .sort(sortQuery)
           .skip(skip)
           .limit(parseInt(limit))
@@ -124,11 +137,13 @@ class ProjectController {
         Project.countDocuments(query),
       ]);
 
+      // Process projects efficiently
+      const userId = req.user?._id?.toString();
       const projectsWithUserData = projects.map((project) => ({
         ...project,
-        hasUpvoted: req.user ? project.upvotes.some((id) => id.toString() === req.user._id.toString()) : false,
-        hasExpressedInterest: req.user
-          ? project.interestedInvestors.some((i) => i.user.toString() === req.user._id.toString())
+        hasUpvoted: userId ? project.upvotes?.some(id => id.toString() === userId) : false,
+        hasExpressedInterest: userId
+          ? project.interestedInvestors?.some(i => i.user?.toString() === userId)
           : false,
         upvotes: undefined,
         interestedInvestors: undefined,
@@ -198,11 +213,11 @@ class ProjectController {
     }
   }
 
-  async getProjectById(req, res) {
+   async getProjectById(req, res) {
     try {
       const project = await Project.findById(req.params.id)
-        .populate('creator', 'fullName profilePicture school major email initials')
-        .populate('teamMembers.user', 'fullName profilePicture school major initials');
+        .populate('creator', 'fullName profilePicture title email initials') // Added title field
+        .populate('teamMembers.user', 'fullName profilePicture title initials');
 
       if (!project) {
         return res.status(404).json({
@@ -211,13 +226,18 @@ class ProjectController {
         });
       }
 
-      await project.updateOne({ $inc: { viewCount: 1 } });
+      // Update view count asynchronously without blocking the response
+      project.viewCount += 1;
+      project.save().catch(err => console.error('Error updating view count:', err));
 
       const projectData = project.toObject();
-      projectData.hasUpvoted = req.user ? project.upvotes.some((id) => id.toString() === req.user._id.toString()) : false;
-      projectData.hasExpressedInterest = req.user
-        ? project.interestedInvestors.some((i) => i.user.toString() === req.user._id.toString())
+      const userId = req.user?._id?.toString();
+      
+      projectData.hasUpvoted = userId ? project.upvotes.some(id => id.toString() === userId) : false;
+      projectData.hasExpressedInterest = userId
+        ? project.interestedInvestors.some(i => i.user.toString() === userId)
         : false;
+      
       delete projectData.upvotes;
       delete projectData.interestedInvestors;
 
@@ -571,6 +591,48 @@ class ProjectController {
       });
     }
   }
+
+async getMyProjects(req, res) {
+  try {
+    const projects = await Project.find({ 
+      creator: req.user._id 
+    })
+      .select('title tagline problemStatement stage category tags coverImage logo upvoteCount viewCount commentCount interestCount createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Transform projects to match frontend expectations
+    const projectsWithCounts = projects.map(project => ({
+      id: project._id,
+      title: project.title,
+      tagline: project.tagline,
+      description: project.problemStatement,
+      stage: project.stage,
+      category: project.category,
+      tags: project.tags,
+      coverImage: project.coverImage,
+      logo: project.logo,
+      upvotes: project.upvoteCount || 0,
+      comments: project.commentCount || 0,
+      views: project.viewCount || 0,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        projects: projectsWithCounts
+      }
+    });
+  } catch (error) {
+    console.error('Get my projects error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch your projects'
+    });
+  }
+}
 
   async toggleCommentLike(req, res) {
     try {

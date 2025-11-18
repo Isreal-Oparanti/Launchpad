@@ -15,9 +15,9 @@ class EmailService {
 
   async sendVerificationCode(email, code, userName) {
     const mailOptions = {
-      from: process.env.SMTP_FROM || 'Launchpad <noreply@launchpad.com>',
+      from: process.env.SMTP_FROM || 'FoundrGeeks <noreply@foundrgeeks.com>',
       to: email,
-      subject: 'Verify Your Email - Launchpad',
+      subject: 'Verify Your Email - FoundrGeeks',
       html: this.getVerificationTemplate(code, userName)
     };
 
@@ -49,19 +49,19 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Launchpad</h1>
-            <p>Student Innovation Platform</p>
+            <h1>FoundrGeeks</h1>
+            <p>Are you READY to build?</p>
           </div>
           <div class="content">
             <h2>Verify Your Email</h2>
             <p>Hello ${userName},</p>
-            <p>Thank you for registering with Launchpad! Use the following verification code to complete your registration:</p>
+            <p>Thank you for registering with FoundrGeeks! Use the following verification code to complete your registration:</p>
             <div class="code">${code}</div>
             <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't create an account with Launchpad, please ignore this email.</p>
+            <p>If you didn't create an account with FoundrGeeks, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>&copy; 2024 Launchpad. All rights reserved.</p>
+            <p>&copy; 2025 FoundrGeeks. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -86,7 +86,7 @@ class EmailService {
   const html = this.getMatchTemplate(projectTitle, matches);
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || 'Launchpad <noreply@launchpad.com>',
+    from: process.env.SMTP_FROM || 'FoundrGeeks <noreply@foundrgeeks.com>',
     to: creatorEmail,
     subject,
     html
@@ -131,7 +131,7 @@ getMatchTemplate(projectTitle, matches) {
     <body>
       <div class="container">
         <div class="header">
-          <h1>Launchpad</h1>
+          <h1>FoundrGeeks</h1>
           <p>Student Innovation Platform</p>
         </div>
         <div class="content">
@@ -141,7 +141,7 @@ getMatchTemplate(projectTitle, matches) {
           <p>If none fit, edit your project for better matches.</p>
         </div>
         <div class="footer">
-          <p>&copy; 2024 Launchpad. All rights reserved.</p>
+          <p>&copy; 2024 FoundrGeeks. All rights reserved.</p>
         </div>
       </div>
     </body>
