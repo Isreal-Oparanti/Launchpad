@@ -181,7 +181,7 @@ const ProjectsPage = () => {
     return (
       <div
         onClick={() => router.push(`/projects/${project._id}`)}
-        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-teal-300"
+        className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-teal-300 w-full"
       >
         {/* Cover Image with Logo */}
         {project.coverImage && (
@@ -381,7 +381,7 @@ const ProjectsPage = () => {
             <div className="px-6 py-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Explore Projects</h1>
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900">Explore Projects</h1>
                   <p className="text-sm text-gray-500 mt-1">Discover innovative ideas and collaborations</p>
                 </div>
                 {/* Icon button for create project */}
@@ -390,7 +390,7 @@ const ProjectsPage = () => {
                     setSelectedProject(null);
                     setShowCreateModal(true);
                   }}
-                  className="bg-teal-600 text-white p-3 rounded-full shadow-lg active:scale-95 transition-transform hover:bg-teal-700"
+                  className="bg-teal-600 text-white p-2 md:p-3 rounded-full shadow-lg active:scale-95 transition-transform hover:bg-teal-700"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -399,7 +399,7 @@ const ProjectsPage = () => {
               </div>
 
               {/* Search and Filters */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 {/* Search Bar */}
                 <div className="flex-1 relative max-w-2xl">
                   <input
@@ -407,7 +407,7 @@ const ProjectsPage = () => {
                     placeholder="Search projects by title, tags, or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white border border-gray-200 transition-all"
+                    className="w-full pl-10 pr-2 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white border border-gray-200 transition-all"
                   />
                   <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -482,7 +482,7 @@ const ProjectsPage = () => {
           </div>
 
           {/* Projects Grid - 2 columns on desktop, 1 on mobile */}
-          <div className="px-6 py-8">
+          <div className="px-2 py-2 md:px-6 md:py-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {projects.map((project) => (
                 <ProjectCard key={project._id} project={project} />
@@ -1126,7 +1126,7 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
                             <button
                               type="button"
                               onClick={addSkillToRole}
-                              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium"
+                              className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg font-medium"
                             >
                               Add
                             </button>
@@ -1199,7 +1199,7 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
                         <button
                           type="button"
                           onClick={addRole}
-                          className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg font-medium disabled:opacity-50"
+                          className="w-full py-2 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-50"
                           disabled={currentRole.requiredSkills.length === 0}
                         >
                           Add Role
@@ -1265,7 +1265,7 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-blue-600 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-teal-600 text-white rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

@@ -221,10 +221,17 @@ const ProfilePage = () => {
     }
   };
 
+
   if (userLoading || isProfileLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
+      <div className="min-h-screen bg-white">
+        <Sidebar activeTab="profile" />
+        <div className="md:ml-64">
+          <Header />
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -235,7 +242,7 @@ const ProfilePage = () => {
       <Sidebar />
       
       <div className="md:ml-64">
-        <div className="pt-[73px] max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
+        <div className="pt-3 md:pt-7 max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
           {/* Profile Header */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
             <div className="flex items-start gap-4 mb-6">
@@ -330,14 +337,14 @@ const ProfilePage = () => {
                   <>
                     <button
                       onClick={handleCancel}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                      className="px-2 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
                       disabled={loading}
-                      className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50"
+                      className="px-2 py-1 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-50"
                     >
                       {loading ? 'Saving...' : 'Save'}
                     </button>
