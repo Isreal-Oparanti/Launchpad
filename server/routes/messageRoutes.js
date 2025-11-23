@@ -1,7 +1,7 @@
 // routes/messageRoutes.js
 const express = require('express');
 const { authenticate } = require('../utils/jwt');
-const MessageController = require('../controllers/MessageController');
+const MessageController = require('../controllers/messageController');
 
 const router = express.Router();
 const messageController = new MessageController();
