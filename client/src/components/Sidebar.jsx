@@ -92,14 +92,14 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-gray-900">
-              F<span className="text-teal-600">oundr</span>Geeks
-            </span>
+                <span> 
+          <img 
+            src="favicon/android-chrome-512x512.png" 
+            alt="foundrgeeks logo" 
+            className={`object-cover w-11 h-11`}
+          />
+        </span>
+        <span className="font-bold text-teal-800">Foun<span className="text-orange-500">dr</span>Geeks</span>  
           </div>
         </div>
 

@@ -301,32 +301,7 @@ export default function Home() {
             >
               Login
             </motion.button>
-            <motion.button
-              onClick={(e) => {
-                createRipple(e);
-                handleNavigation('/register');
-              }}
-              whileHover={{ scale: 1.05, y: -1 }}
-              whileTap={{ scale: 0.95 }}
-              className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-3 py-1.5 md:px-6 md:py-2.5 text-sm md:text-base rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              <span className="relative z-10">Get Started</span>
-              <style jsx>{`
-                .ripple {
-                  position: absolute;
-                  border-radius: 50%;
-                  background: rgba(255, 255, 255, 0.6);
-                  transform: scale(0);
-                  animation: ripple 0.6s linear;
-                } 
-                @keyframes ripple {
-                  to {
-                    transform: scale(4);
-                    opacity: 0;
-                  }
-                }
-              `}</style>
-            </motion.button>
+            
           </motion.div>
         </div>
       </motion.header>

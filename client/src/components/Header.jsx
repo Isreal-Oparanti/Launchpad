@@ -106,7 +106,7 @@ export default function Header() {
   };
 
   const mobileNavItems = navigationItems.filter((i) =>
-    ['projects', 'opportunities', 'messages', 'profile'].includes(i.id)
+    ['projects', 'messages', 'notifications', 'profile'].includes(i.id)
   );
 
   return (
@@ -118,14 +118,16 @@ export default function Header() {
             <div className="flex items-center gap-2">
               {/* Mobile Logo */}
               <div className="flex md:hidden items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+                <div className="w-8 h-8 rounded-lg  flex items-center justify-center">
+                   <img 
+                      src="favicon/android-chrome-512x512.png" 
+                      alt="foundrgeeks logo" 
+                      className={`object-cover w-11 h-11`}
+                    />
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                {/* <span className="text-xl font-bold text-gray-900">
                   F<span className="text-teal-600">oundr</span>Geeks
-                </span>
+                </span> */}
               </div>
 
               {/* Desktop Search */}
@@ -288,14 +290,6 @@ export default function Header() {
               F<span className="text-teal-600">oundr</span>Geeks
             </span>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="p-2 rounded-lg hover:bg-gray-100"
-          >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Navigation */}
