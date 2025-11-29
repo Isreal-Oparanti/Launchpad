@@ -92,7 +92,7 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-                <span> 
+        <span> 
           <img 
             src="favicon/android-chrome-512x512.png" 
             alt="foundrgeeks logo" 

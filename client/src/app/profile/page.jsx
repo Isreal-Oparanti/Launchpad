@@ -303,7 +303,7 @@ const ProfilePage = () => {
                     placeholder="Your full name"
                   />
                 ) : (
-                  <h1 className="text-xl font-bold text-gray-900 mb-1 truncate">{user.fullName}</h1>
+                  <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-1 truncate">{user.fullName}</h1>
                 )}
                 
                 <p className="text-teal-600 text-sm mb-2">@{user.username}</p>
@@ -329,7 +329,7 @@ const ProfilePage = () => {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
+                    className="px-3 py-1 md:px-4 md:py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
                   >
                     Edit
                   </button>
@@ -474,13 +474,26 @@ const ProfilePage = () => {
           <div className="bg-white border border-gray-200 rounded-xl p-6 mb-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Open to Collaboration</h3>
+                <div className="flex justify-between gap-3 mb-2">
+                  <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2">Open to Collaboration</h3>
+                   <button
+                      onClick={handleCollabToggle}
+                      className={`px-3 py-2 text-sm rounded-lg font-medium transition-colors shrink-0 ${
+                        user.openToCollaboration
+                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-teal-600 text-white hover:bg-teal-700'
+                      }`}
+                    >
+                      {user.openToCollaboration ? 'Disable' : 'Enable'}
+                    </button>
+                </div>
+                
                 <p className="text-sm text-gray-600 mb-4">
                   Enable this to match with potential co-founders and collaborators based on your profile, skills, and interests.
                 </p>
                 {user.openToCollaboration && user.collaborationProfile && (
                   <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-                    <p className="text-sm text-teal-800 font-medium mb-2">🎯 Your collaboration profile is active</p>
+                    <p className="text-sm text-teal-800 font-medium mb-2"> Your collaboration profile is active</p>
                     <div className="flex flex-wrap gap-2 text-xs">
                       {user.collaborationProfile.lookingFor?.length > 0 && (
                         <span className="text-teal-700">Looking for: {user.collaborationProfile.lookingFor.join(', ')}</span>
@@ -489,16 +502,7 @@ const ProfilePage = () => {
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleCollabToggle}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors shrink-0 ${
-                  user.openToCollaboration
-                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    : 'bg-teal-600 text-white hover:bg-teal-700'
-                }`}
-              >
-                {user.openToCollaboration ? 'Disable' : 'Enable'}
-              </button>
+             
             </div>
             
             {user.openToCollaboration && (

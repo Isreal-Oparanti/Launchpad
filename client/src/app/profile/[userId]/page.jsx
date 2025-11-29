@@ -132,12 +132,9 @@ const UserProfilePage = () => {
               <div className="flex gap-2 shrink-0">
                 {!isOwnProfile && (
                   <>
-                    <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">
-                      Connect
-                    </button>
                     <button 
                       onClick={() => router.push(`/message/${user.id}`)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                      className="px-3 py-2 md:px-4 md:py-2 border border-gray-300 text-gray-700 rounded-lg text-xs md:text-sm font-medium hover:bg-gray-50"
                     >
                       Message
                     </button>
