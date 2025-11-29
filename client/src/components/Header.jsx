@@ -31,7 +31,8 @@ export default function Header() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const navigationItems = [
+  // Desktop navigation items (all items)
+  const desktopNavigationItems = [
     {
       id: 'projects',
       label: 'Projects',
@@ -97,6 +98,57 @@ export default function Header() {
     },
   ];
 
+  // Mobile drawer items (exclude projects, messages, notifications since they're in bottom nav)
+  const mobileDrawerItems = desktopNavigationItems.filter((item) => 
+    !['projects', 'messages', 'notifications'].includes(item.id)
+  );
+
+  // Bottom nav items (only these 4)
+  const mobileNavItems = [
+    {
+      id: 'projects',
+      label: 'Projects',
+      path: '/projects',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      path: '/message',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+      badge: 3,
+    },
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      path: '/notifications',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      ),
+      badge: 5,
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      path: '/profile',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+  ];
+
   const handleNavigation = (path) => {
     router.push(path);
   };
@@ -104,10 +156,6 @@ export default function Header() {
   const isActive = (path) => {
     return pathname === path;
   };
-
-  const mobileNavItems = navigationItems.filter((i) =>
-    ['projects', 'messages', 'notifications', 'profile'].includes(i.id)
-  );
 
   return (
     <>
@@ -118,16 +166,13 @@ export default function Header() {
             <div className="flex items-center gap-2">
               {/* Mobile Logo */}
               <div className="flex md:hidden items-center gap-2">
-                <div className="w-8 h-8 rounded-lg  flex items-center justify-center">
-                   <img 
-                      src="favicon/android-chrome-512x512.png" 
-                      alt="foundrgeeks logo" 
-                      className={`object-cover w-11 h-11`}
-                    />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                  <img 
+                    src="favicon/android-chrome-512x512.png" 
+                    alt="foundrgeeks logo" 
+                    className="object-cover w-11 h-11"
+                  />
                 </div>
-                {/* <span className="text-xl font-bold text-gray-900">
-                  F<span className="text-teal-600">oundr</span>Geeks
-                </span> */}
               </div>
 
               {/* Desktop Search */}
@@ -154,7 +199,7 @@ export default function Header() {
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <span className="absolute top-1 right-1 bg-teal-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                     5
                   </span>
                 </button>
@@ -208,7 +253,7 @@ export default function Header() {
                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="absolute top-1 right-1 bg-teal-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                   3
                 </span>
               </button>
@@ -281,21 +326,23 @@ export default function Header() {
         {/* Close Button */}
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+              <span> 
+                <img 
+                  src="favicon/android-chrome-512x512.png" 
+                  alt="foundrgeeks logo" 
+                  className="object-cover w-11 h-11"
+                />
+              </span>
             </div>
-            <span className="text-xl font-bold text-gray-900">
-              F<span className="text-teal-600">oundr</span>Geeks
-            </span>
+            <span className="font-bold text-teal-800">Foun<span className="text-orange-500">dr</span>Geeks</span>  
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Only opportunities, profile, settings */}
         <div className="flex-1 overflow-y-auto py-4 px-3">
           <nav className="space-y-1">
-            {navigationItems.map((item) => (
+            {mobileDrawerItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item.path)}
@@ -309,11 +356,6 @@ export default function Header() {
                   {item.icon}
                 </div>
                 <span className="flex-1 text-left">{item.label}</span>
-                {item.badge && (
-                  <span className="bg-teal-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                    {item.badge}
-                  </span>
-                )}
               </button>
             ))}
           </nav>
@@ -334,7 +376,6 @@ export default function Header() {
       </div>
 
       {/* ========== MOBILE BOTTOM BAR ========== */}
-      {/* Conditionally render bottom nav only on non-chat and non-user-profile pages */}
       {!hideBottomNav && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
           <div className="flex justify-around items-center h-16 px-2">
@@ -349,7 +390,7 @@ export default function Header() {
                 <div className="relative">
                   {item.icon}
                   {item.badge && (
-                    <span className="absolute -top-1 -right-1 bg-teal-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                       {item.badge}
                     </span>
                   )}

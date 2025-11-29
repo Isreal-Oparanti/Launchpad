@@ -1,5 +1,5 @@
 const Project = require('../models/Project');
-
+const { recordProjectView } = require('../utils/viewTracking');
 class ProjectController {
  async createProject(req, res) {
     try {
@@ -214,45 +214,47 @@ class ProjectController {
   }
 
    async getProjectById(req, res) {
-    try {
-      const project = await Project.findById(req.params.id)
-        .populate('creator', 'fullName profilePicture title email initials') // Added title field
-        .populate('teamMembers.user', 'fullName profilePicture title initials');
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('creator', 'fullName profilePicture title email initials')
+      .populate('teamMembers.user', 'fullName profilePicture title initials');
 
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: 'Project not found',
-        });
-      }
-
-      // Update view count asynchronously without blocking the response
-      project.viewCount += 1;
-      project.save().catch(err => console.error('Error updating view count:', err));
-
-      const projectData = project.toObject();
-      const userId = req.user?._id?.toString();
-      
-      projectData.hasUpvoted = userId ? project.upvotes.some(id => id.toString() === userId) : false;
-      projectData.hasExpressedInterest = userId
-        ? project.interestedInvestors.some(i => i.user.toString() === userId)
-        : false;
-      
-      delete projectData.upvotes;
-      delete projectData.interestedInvestors;
-
-      res.json({
-        success: true,
-        data: projectData,
-      });
-    } catch (error) {
-      console.error('Get project error:', error);
-      res.status(500).json({
+    if (!project) {
+      return res.status(404).json({
         success: false,
-        message: 'Failed to fetch project',
+        message: 'Project not found',
       });
     }
+
+    // ✅ FIXED: Record view asynchronously without blocking response
+    // This runs in background and doesn't slow down page load
+    recordProjectView(project._id, req).catch(err => 
+      console.error('View recording error:', err)
+    );
+
+    const projectData = project.toObject();
+    const userId = req.user?._id?.toString();
+    
+    projectData.hasUpvoted = userId ? project.upvotes.some(id => id.toString() === userId) : false;
+    projectData.hasExpressedInterest = userId
+      ? project.interestedInvestors.some(i => i.user.toString() === userId)
+      : false;
+    
+    delete projectData.upvotes;
+    delete projectData.interestedInvestors;
+
+    res.json({
+      success: true,
+      data: projectData,
+    });
+  } catch (error) {
+    console.error('Get project error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch project',
+    });
   }
+}
 
  async updateProject(req, res) {
     try {

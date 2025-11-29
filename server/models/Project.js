@@ -221,7 +221,7 @@ projectSchema.post('save', async function(doc, next) {
             const notification = new Notification({
               user: doc.creator,
               type: 'match',
-              title: `🎯 ${matches.length} Match${matches.length > 1 ? 'es' : ''} Found!`,
+              title: `${matches.length} Match${matches.length > 1 ? 'es' : ''} Found!`,
               description: `We found ${matches.length} potential collaborator${matches.length > 1 ? 's' : ''} for "${doc.title}"`,
               link: `/projects/${doc._id}/matches`,
               metadata: {
@@ -238,10 +238,10 @@ projectSchema.post('save', async function(doc, next) {
         } catch (matchingError) {
           console.error('❌ AUTO-MATCHING FAILED:', matchingError.message);
         }
-      }, 1000); // 1 second delay to ensure project is fully saved
+      }, 1000); 
     }
   } catch (error) {
-    console.error('❌ POST-SAVE HOOK ERROR:', error.message);
+    console.error('❌POST-SAVE HOOK ERROR:', error.message);
   }
   
   next();

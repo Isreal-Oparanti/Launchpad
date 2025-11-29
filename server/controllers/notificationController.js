@@ -6,10 +6,40 @@ class NotificationController {
       const notifications = await Notification.find({ user: req.user._id })
         .sort({ createdAt: -1 })
         .limit(50);
-      res.json({ success: true, data: { notifications } });
+      
+      // Get unread count for badges
+      const unreadCount = await Notification.countDocuments({ 
+        user: req.user._id, 
+        read: false 
+      });
+
+      res.json({ 
+        success: true, 
+        data: { 
+          notifications,
+          unreadCount 
+        } 
+      });
     } catch (error) {
       console.error('Get notifications error:', error);
       res.status(500).json({ success: false, message: 'Failed to get notifications' });
+    }
+  }
+
+  async getUnreadCount(req, res) {
+    try {
+      const unreadCount = await Notification.countDocuments({ 
+        user: req.user._id, 
+        read: false 
+      });
+
+      res.json({ 
+        success: true, 
+        data: { unreadCount } 
+      });
+    } catch (error) {
+      console.error('Get unread count error:', error);
+      res.status(500).json({ success: false, message: 'Failed to get unread count' });
     }
   }
 
@@ -21,7 +51,20 @@ class NotificationController {
         { new: true }
       );
       if (!notification) return res.status(404).json({ success: false, message: 'Notification not found' });
-      res.json({ success: true, data: notification });
+      
+      // Return updated unread count
+      const unreadCount = await Notification.countDocuments({ 
+        user: req.user._id, 
+        read: false 
+      });
+
+      res.json({ 
+        success: true, 
+        data: { 
+          notification,
+          unreadCount 
+        } 
+      });
     } catch (error) {
       console.error('Mark read error:', error);
       res.status(500).json({ success: false, message: 'Failed to mark as read' });
@@ -31,7 +74,11 @@ class NotificationController {
   async markAllAsRead(req, res) {
     try {
       await Notification.updateMany({ user: req.user._id, read: false }, { read: true });
-      res.json({ success: true });
+      
+      res.json({ 
+        success: true, 
+        data: { unreadCount: 0 } 
+      });
     } catch (error) {
       console.error('Mark all read error:', error);
       res.status(500).json({ success: false, message: 'Failed to mark all as read' });
@@ -40,9 +87,21 @@ class NotificationController {
 
   async deleteNotification(req, res) {
     try {
-      const notification = await Notification.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+      const notification = await Notification.findOne({ _id: req.params.id, user: req.user._id });
       if (!notification) return res.status(404).json({ success: false, message: 'Notification not found' });
-      res.json({ success: true });
+      
+      await Notification.findByIdAndDelete(req.params.id);
+      
+      // Return updated unread count
+      const unreadCount = await Notification.countDocuments({ 
+        user: req.user._id, 
+        read: false 
+      });
+
+      res.json({ 
+        success: true, 
+        data: { unreadCount } 
+      });
     } catch (error) {
       console.error('Delete notification error:', error);
       res.status(500).json({ success: false, message: 'Failed to delete notification' });
