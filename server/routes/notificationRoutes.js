@@ -1,6 +1,5 @@
 const express = require('express');
 const { authenticate } = require('../utils/jwt');
-
 const router = express.Router();
 const NotificationController = require('../controllers/notificationController');
 const notificationController = new NotificationController();
