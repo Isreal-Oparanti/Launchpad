@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
+import { useNotificationCount } from '@/hooks/useNotificationCount';
 
 export default function Header() {
   const { user, logout } = useUser();
@@ -9,6 +10,9 @@ export default function Header() {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Use real notification count
+  const { notificationCount, showBadge } = useNotificationCount();
 
   // Check if we're on specific pages where bottom nav should be hidden
   const isIndividualChatPage = pathname.startsWith('/message/') && pathname.split('/').length > 2;
@@ -31,7 +35,7 @@ export default function Header() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Desktop navigation items (all items)
+  // Desktop navigation items
   const desktopNavigationItems = [
     {
       id: 'projects',
@@ -73,7 +77,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: 5,
+      badge: showBadge ? notificationCount : null,
     },
     {
       id: 'profile',
@@ -98,12 +102,12 @@ export default function Header() {
     },
   ];
 
-  // Mobile drawer items (exclude projects, messages, notifications since they're in bottom nav)
+  // Mobile drawer items
   const mobileDrawerItems = desktopNavigationItems.filter((item) => 
     !['projects', 'messages', 'notifications'].includes(item.id)
   );
 
-  // Bottom nav items (only these 4)
+  // Bottom nav items
   const mobileNavItems = [
     {
       id: 'projects',
@@ -135,7 +139,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: 5,
+      badge: showBadge ? notificationCount : null,
     },
     {
       id: 'profile',
@@ -151,6 +155,7 @@ export default function Header() {
 
   const handleNavigation = (path) => {
     router.push(path);
+    setMobileMenuOpen(false);
   };
 
   const isActive = (path) => {
@@ -199,9 +204,11 @@ export default function Header() {
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                    5
-                  </span>
+                  {showBadge && (
+                    <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                      {notificationCount > 99 ? '99+' : notificationCount}
+                    </span>
+                  )}
                 </button>
 
                 {showNotifications && (
@@ -210,24 +217,14 @@ export default function Header() {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-40">
                       <div className="p-4 border-b border-gray-100">
                         <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                        {showBadge && (
+                          <p className="text-xs text-gray-500 mt-1">{notificationCount} unread</p>
+                        )}
                       </div>
-                      <div className="max-h-[400px] overflow-y-auto">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className="p-4 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors">
-                            <div className="flex gap-3">
-                              <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                                <svg className="w-5 h-5 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                </svg>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900">New collaboration request</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Someone wants to join your project</p>
-                                <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="max-h-[400px] overflow-y-auto p-2">
+                        <div className="p-4 text-center">
+                          <p className="text-gray-500 text-sm">Open the notifications page to see all</p>
+                        </div>
                       </div>
                       <div className="p-3 border-t border-gray-100">
                         <button 
@@ -389,9 +386,9 @@ export default function Header() {
               >
                 <div className="relative">
                   {item.icon}
-                  {item.badge && (
+                  {item.badge && item.badge > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {item.badge}
+                      {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
                 </div>

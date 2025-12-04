@@ -1,6 +1,68 @@
 class AuthService {
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    this.isRefreshing = false;
+    this.failedRequests = [];
+  }
+
+  async refreshToken() {
+    if (this.isRefreshing) {
+      return new Promise((resolve, reject) => {
+        this.failedRequests.push({ resolve, reject });
+      });
+    }
+
+    this.isRefreshing = true;
+
+    try {
+      const response = await fetch(`${this.baseURL}/auth/refresh-token`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+      
+      // Process all queued requests
+      this.failedRequests.forEach(request => request.resolve(data));
+      this.failedRequests = [];
+      
+      return data;
+    } catch (error) {
+      this.failedRequests.forEach(request => request.reject(error));
+      this.failedRequests = [];
+      throw error;
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  async fetchWithAuth(url, options = {}) {
+    let response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+    });
+
+    // If token expired, try to refresh
+    if (response.status === 401) {
+      try {
+        await this.refreshToken();
+        // Retry the original request
+        response = await fetch(url, {
+          ...options,
+          credentials: 'include',
+        });
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+    }
+
+    return response;
   }
 
   async register(userData) {
@@ -80,14 +142,8 @@ class AuthService {
   }
 
   async getCurrentUser() {
-    const response = await fetch(`${this.baseURL}/auth/me`, {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Not authenticated');
-    }
-
+    const response = await this.fetchWithAuth(`${this.baseURL}/auth/me`);
+    if (!response.ok) throw new Error('Not authenticated');
     return response.json();
   }
 
@@ -105,12 +161,11 @@ class AuthService {
       console.log('Updating profile with data:', profileData);
       console.log('Request URL:', `${this.baseURL}/auth/profile`);
       
-      const response = await fetch(`${this.baseURL}/auth/profile`, {
+      const response = await this.fetchWithAuth(`${this.baseURL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(profileData),
       });
 
@@ -133,12 +188,11 @@ class AuthService {
   }
 
   async changePassword(passwordData) {
-    const response = await fetch(`${this.baseURL}/auth/change-password`, {
+    const response = await this.fetchWithAuth(`${this.baseURL}/auth/change-password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include',
       body: JSON.stringify(passwordData),
     });
 
@@ -152,9 +206,8 @@ class AuthService {
   }
 
   async deleteAccount() {
-    const response = await fetch(`${this.baseURL}/auth/delete-account`, {
+    const response = await this.fetchWithAuth(`${this.baseURL}/auth/delete-account`, {
       method: 'DELETE',
-      credentials: 'include',
     });
 
     const data = await response.json();
