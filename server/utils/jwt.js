@@ -5,8 +5,8 @@
     constructor() {
       this.accessTokenSecret = process.env.JWT_ACCESS_SECRET;
       this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-      this.accessTokenExpiry = process.env.JWT_ACCESS_EXPIRY || '2d';
-      this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
+      this.accessTokenExpiry = process.env.JWT_ACCESS_EXPIRY || '1d';
+      this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '21d';
       
       if (!this.accessTokenSecret || !this.refreshTokenSecret) {
         throw new Error('JWT secrets are not configured');

@@ -1,4 +1,3 @@
-// @/context/AuthContext.js
 "use client";
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -47,9 +46,21 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        await fetchUser();
+        const isAuthenticated = await fetchUser();
+        if (!isAuthenticated) {
+          // Only redirect if not on login/register pages
+          if (!window.location.pathname.includes('/login') && 
+              !window.location.pathname.includes('/register')) {
+            router.push('/login');
+          }
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        // Only redirect if not on login/register pages
+        if (!window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/register')) {
+          router.push('/login');
+        }
       } finally {
         setLoading(false);
       }
@@ -57,6 +68,22 @@ export const UserProvider = ({ children }) => {
 
     initializeAuth();
   }, []);
+
+  // Add a session check interval
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        await fetchUser();
+      } catch (error) {
+        console.error('Session check failed:', error);
+        logout();
+      }
+    }, 15 * 60 * 1000); // Check every 15 minutes
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <UserContext.Provider value={{ user, loading, login, logout, fetchUser }}>

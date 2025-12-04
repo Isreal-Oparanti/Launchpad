@@ -6,6 +6,7 @@ import { useUser } from '@/context/AuthContext';
 import projectService from '@/utils/project'; 
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import SessionExpiryWarning from '@/components/SessionExpiryWarning';
 
 const ProjectsPage = () => {
   const router = useRouter();
@@ -133,6 +134,7 @@ const ProjectsPage = () => {
       console.error('Upvote error:', error);
       // Check if unauthorized
       if (error.response?.status === 401 || error.message?.includes('token')) {
+        alert('Your session has expired. Please login again.');
         router.push('/login');
         return;
       }
@@ -159,6 +161,11 @@ const ProjectsPage = () => {
         setSelectedProject(null);
       }
     } catch (error) {
+      if (error.response?.status === 401 || error.message?.includes('token')) {
+        alert('Your session has expired. Please login again.');
+        router.push('/login');
+        return;
+      }
       alert(error.message || 'Failed to delete project');
     }
   };
@@ -624,6 +631,9 @@ const ProjectsPage = () => {
           </div>
         )}
       </div>
+      
+      {/* Session Expiry Warning */}
+      <SessionExpiryWarning />
     </div>
   );
 };

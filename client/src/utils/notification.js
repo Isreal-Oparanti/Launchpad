@@ -1,59 +1,53 @@
-class NotificationService {
-  constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-  }
+'use client';
 
-  async getNotifications() {
-    const response = await fetch(`${this.baseURL}/notifications`, {
-      credentials: 'include',
-    });
+import { useState, useEffect, useCallback } from 'react';
+import { useUser } from '@/context/AuthContext';
+import notificationService from '@/utils/notification';
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch notifications');
+export function useNotificationCount() {
+  const { user } = useUser();
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotificationCount = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/notifications/unread-count', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setNotificationCount(data.data.unreadCount);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notification count:', error);
+    } finally {
+      setLoading(false);
     }
+  }, [user]);
 
-    return response.json();
-  }
+  useEffect(() => {
+    fetchNotificationCount();
 
-  async markAsRead(notificationId) {
-    const response = await fetch(`${this.baseURL}/notifications/${notificationId}/mark-read`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchNotificationCount, 30000);
 
-    if (!response.ok) {
-      throw new Error('Failed to mark as read');
-    }
+    return () => clearInterval(interval);
+  }, [fetchNotificationCount]);
 
-    return response.json();
-  }
+  const updateNotificationCount = (newCount) => {
+    setNotificationCount(newCount);
+  };
 
-  async markAllAsRead() {
-    const response = await fetch(`${this.baseURL}/notifications/mark-all-read`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to mark all as read');
-    }
-
-    return response.json();
-  }
-
-  async deleteNotification(notificationId) {
-    const response = await fetch(`${this.baseURL}/notifications/${notificationId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete notification');
-    }
-
-    return response.json();
-  }
+  return {
+    notificationCount,
+    loading,
+    refetchNotificationCount: fetchNotificationCount,
+    updateNotificationCount
+  };
 }
-
-export const notificationService = new NotificationService();
-export default notificationService;
