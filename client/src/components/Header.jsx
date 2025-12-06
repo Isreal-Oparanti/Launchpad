@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
 import { useNotificationCount } from '@/hooks/useNotificationCount';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 
 export default function Header() {
   const { user, logout } = useUser();
@@ -12,7 +13,32 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Use real notification count
-  const { notificationCount, showBadge } = useNotificationCount();
+  const { notificationCount: notificationBadgeCount, showBadge: showNotificationBadge } = useNotificationCount();
+  
+  // Use real unread message count with real-time updates
+  const { unreadMessageCount, showBadge: showMessageBadge, refetchUnreadCount } = useUnreadMessageCount();
+
+  // Listen for message events for real-time updates
+  useEffect(() => {
+    const handleMessageEvents = () => {
+      refetchUnreadCount();
+    };
+
+    // Listen for custom events from message page
+    window.addEventListener('newMessageReceived', handleMessageEvents);
+    window.addEventListener('messagesMarkedAsRead', handleMessageEvents);
+    window.addEventListener('refreshMessageBadges', handleMessageEvents);
+
+    // Also poll more frequently in header (every 5 seconds)
+    const interval = setInterval(refetchUnreadCount, 5000);
+
+    return () => {
+      window.removeEventListener('newMessageReceived', handleMessageEvents);
+      window.removeEventListener('messagesMarkedAsRead', handleMessageEvents);
+      window.removeEventListener('refreshMessageBadges', handleMessageEvents);
+      clearInterval(interval);
+    };
+  }, [refetchUnreadCount]);
 
   // Check if we're on specific pages where bottom nav should be hidden
   const isIndividualChatPage = pathname.startsWith('/message/') && pathname.split('/').length > 2;
@@ -66,7 +92,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      badge: 3,
+      badge: showMessageBadge ? unreadMessageCount : null,
     },
     {
       id: 'notifications',
@@ -77,7 +103,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: showBadge ? notificationCount : null,
+      badge: showNotificationBadge ? notificationBadgeCount : null,
     },
     {
       id: 'profile',
@@ -128,7 +154,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      badge: 3,
+      badge: showMessageBadge ? unreadMessageCount : null,
     },
     {
       id: 'notifications',
@@ -139,7 +165,7 @@ export default function Header() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: showBadge ? notificationCount : null,
+      badge: showNotificationBadge ? notificationBadgeCount : null,
     },
     {
       id: 'profile',
@@ -159,7 +185,7 @@ export default function Header() {
   };
 
   const isActive = (path) => {
-    return pathname === path;
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
@@ -204,9 +230,9 @@ export default function Header() {
                   <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  {showBadge && (
+                  {showNotificationBadge && (
                     <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                      {notificationCount > 99 ? '99+' : notificationCount}
+                      {notificationBadgeCount > 99 ? '99+' : notificationBadgeCount}
                     </span>
                   )}
                 </button>
@@ -217,8 +243,8 @@ export default function Header() {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-40">
                       <div className="p-4 border-b border-gray-100">
                         <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
-                        {showBadge && (
-                          <p className="text-xs text-gray-500 mt-1">{notificationCount} unread</p>
+                        {showNotificationBadge && (
+                          <p className="text-xs text-gray-500 mt-1">{notificationBadgeCount} unread</p>
                         )}
                       </div>
                       <div className="max-h-[400px] overflow-y-auto p-2">
@@ -250,9 +276,11 @@ export default function Header() {
                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
-                  3
-                </span>
+                {showMessageBadge && (
+                  <span className="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </span>
+                )}
               </button>
 
               {/* Profile (Desktop) */}
@@ -364,7 +392,7 @@ export default function Header() {
             onClick={logout}
             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-all"
           >
-            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             <span>Sign Out</span>
