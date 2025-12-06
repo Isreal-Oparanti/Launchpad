@@ -2,20 +2,33 @@ class AuthService {
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     this.isRefreshing = false;
-    this.failedRequests = [];
+    this.failedQueue = [];
+  }
+
+  // Process queued requests after token refresh
+  processQueue(error, token = null) {
+    this.failedQueue.forEach(prom => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+    this.failedQueue = [];
   }
 
   async refreshToken() {
     if (this.isRefreshing) {
+      // Queue the request and wait for token refresh
       return new Promise((resolve, reject) => {
-        this.failedRequests.push({ resolve, reject });
+        this.failedQueue.push({ resolve, reject });
       });
     }
 
     this.isRefreshing = true;
 
     try {
-      const response = await fetch(`${this.baseURL}/auth/refresh-token`, {
+      const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -25,15 +38,10 @@ class AuthService {
       }
 
       const data = await response.json();
-      
-      // Process all queued requests
-      this.failedRequests.forEach(request => request.resolve(data));
-      this.failedRequests = [];
-      
+      this.processQueue(null, data.accessToken);
       return data;
     } catch (error) {
-      this.failedRequests.forEach(request => request.reject(error));
-      this.failedRequests = [];
+      this.processQueue(error, null);
       throw error;
     } finally {
       this.isRefreshing = false;
@@ -41,28 +49,32 @@ class AuthService {
   }
 
   async fetchWithAuth(url, options = {}) {
-    let response = await fetch(url, {
-      ...options,
-      credentials: 'include',
-    });
+    try {
+      let response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+      });
 
-    // If token expired, try to refresh
-    if (response.status === 401) {
-      try {
-        await this.refreshToken();
-        // Retry the original request
-        response = await fetch(url, {
-          ...options,
-          credentials: 'include',
-        });
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
-        window.location.href = '/login';
-        throw new Error('Session expired. Please login again.');
+      // If we get 401, try refresh ONCE
+      if (response.status === 401) {
+        try {
+          await this.refreshToken();
+          
+          // Retry the original request with new token
+          response = await fetch(url, {
+            ...options,
+            credentials: 'include',
+          });
+        } catch (refreshError) {
+          // Refresh failed - don't redirect here, let caller handle it
+          throw new Error('AUTH_FAILED');
+        }
       }
-    }
 
-    return response;
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async register(userData) {
@@ -142,9 +154,20 @@ class AuthService {
   }
 
   async getCurrentUser() {
-    const response = await this.fetchWithAuth(`${this.baseURL}/auth/me`);
-    if (!response.ok) throw new Error('Not authenticated');
-    return response.json();
+    try {
+      const response = await this.fetchWithAuth(`${this.baseURL}/auth/me`);
+      
+      if (!response.ok) {
+        throw new Error('Not authenticated');
+      }
+      
+      return response.json();
+    } catch (error) {
+      if (error.message === 'AUTH_FAILED') {
+        throw new Error('Session expired');
+      }
+      throw error;
+    }
   }
 
   async logout() {
@@ -158,9 +181,6 @@ class AuthService {
 
   async updateProfile(profileData) {
     try {
-      console.log('Updating profile with data:', profileData);
-      console.log('Request URL:', `${this.baseURL}/auth/profile`);
-      
       const response = await this.fetchWithAuth(`${this.baseURL}/auth/profile`, {
         method: 'PUT',
         headers: {
@@ -169,20 +189,14 @@ class AuthService {
         body: JSON.stringify(profileData),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       const data = await response.json();
-      console.log('Response data:', data);
       
       if (!response.ok) {
-        console.error('Update profile failed:', data);
-        throw new Error(data.message || `Profile update failed with status ${response.status}`);
+        throw new Error(data.message || `Profile update failed`);
       }
       
       return data;
     } catch (error) {
-      console.error('Update profile error:', error);
       throw error;
     }
   }
@@ -219,7 +233,6 @@ class AuthService {
     return data;
   }
 
-  // NEW METHODS FOR USER PROFILES
   async getUserProfile(userId) {
     const response = await fetch(`${this.baseURL}/auth/users/${userId}`, {
       credentials: 'include',

@@ -1,7 +1,10 @@
 const Project = require('../models/Project');
 const { recordProjectView } = require('../utils/viewTracking');
+const fs = require('fs');
+const path = require('path');
+
 class ProjectController {
- async createProject(req, res) {
+async createProject(req, res) {
     try {
       console.log('===== CREATE PROJECT DEBUG =====');
       console.log('Headers:', req.headers);
@@ -10,6 +13,7 @@ class ProjectController {
       console.log('req.user:', req.user);
       console.log('================================');
 
+      // Handle form data parsing errors
       if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({
           success: false,
@@ -17,7 +21,10 @@ class ProjectController {
         });
       }
 
+      // Parse string fields from form data
       const requiredFields = ['title', 'tagline', 'problemStatement', 'solution', 'targetMarket', 'category', 'stage'];
+      
+      // Check if fields exist in req.body (they come as strings in FormData)
       for (const field of requiredFields) {
         if (!req.body[field] || req.body[field].trim() === '') {
           return res.status(400).json({
@@ -27,6 +34,7 @@ class ProjectController {
         }
       }
 
+      // Parse tags
       let tags = [];
       if (req.body.tags) {
         try {
@@ -37,16 +45,20 @@ class ProjectController {
         }
       }
 
+      // Parse neededRoles
       let neededRoles = [];
       if (req.body.neededRoles) {
         try {
-          neededRoles = typeof req.body.neededRoles === 'string' ? JSON.parse(req.body.neededRoles) : req.body.neededRoles;
+          neededRoles = typeof req.body.neededRoles === 'string' 
+            ? JSON.parse(req.body.neededRoles) 
+            : req.body.neededRoles;
         } catch (e) {
           console.error('Failed to parse neededRoles:', e);
           neededRoles = [];
         }
       }
 
+      // Create project data object
       const projectData = {
         title: req.body.title,
         tagline: req.body.tagline,
@@ -55,26 +67,50 @@ class ProjectController {
         targetMarket: req.body.targetMarket,
         category: req.body.category,
         stage: req.body.stage,
-        tags,
+        tags: tags,
         demoUrl: req.body.demoUrl || '',
         neededRoles: neededRoles.length > 0 ? neededRoles : undefined,
         creator: req.user._id,
-        isPublished: req.body.isPublished === 'true',
-        logo: req.files?.logo ? { data: req.files.logo[0].buffer, contentType: req.files.logo[0].mimetype } : null,
-        coverImage: req.files?.coverImage ? { data: req.files.coverImage[0].buffer, contentType: req.files.coverImage[0].mimetype } : null,
+        isPublished: req.body.isPublished === 'true' || req.body.isPublished === true,
         upvoteCount: 0,
         viewCount: 0,
         commentCount: 0,
         interestCount: 0,
       };
 
-      console.log('Project data before saving:', projectData);
+      // Handle logo upload
+      if (req.files && req.files.logo && req.files.logo[0]) {
+        console.log('✅ Logo file received:', req.files.logo[0].originalname);
+        projectData.logo = {
+          data: req.files.logo[0].buffer,
+          contentType: req.files.logo[0].mimetype,
+          filename: req.files.logo[0].originalname
+        };
+      }
+
+      // Handle cover image upload
+      if (req.files && req.files.coverImage && req.files.coverImage[0]) {
+        console.log('✅ Cover image received:', req.files.coverImage[0].originalname);
+        projectData.coverImage = {
+          data: req.files.coverImage[0].buffer,
+          contentType: req.files.coverImage[0].mimetype,
+          filename: req.files.coverImage[0].originalname
+        };
+      }
+
+      console.log('Project data before saving:', {
+        ...projectData,
+        logo: projectData.logo ? '✅ Present' : '❌ Missing',
+        coverImage: projectData.coverImage ? '✅ Present' : '❌ Missing'
+      });
 
       const newProject = new Project(projectData);
-
       await newProject.save();
 
       console.log('✅ Project created successfully:', newProject._id);
+
+      // Populate creator data for response
+      await newProject.populate('creator', 'fullName profilePicture title initials');
 
       res.status(201).json({
         success: true,
@@ -90,7 +126,7 @@ class ProjectController {
       });
     }
   }
-
+  
    async getAllProjects(req, res) {
     try {
       const { page = 1, limit = 12, category, stage, search, sort = 'recent' } = req.query;

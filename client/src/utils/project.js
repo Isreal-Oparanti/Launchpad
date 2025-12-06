@@ -1,17 +1,30 @@
+'use client';
+
 class ProjectService {
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
   }
 
-  async getProjects({ page = 1, limit = 12, category, stage, search, sort = 'recent' } = {}) {
+  // =============== IMAGE URL HELPERS ===============
+  getLogoUrl(projectId) {
+    return `${this.baseURL}/projects/${projectId}/logo`;
+  }
+
+  getCoverImageUrl(projectId) {
+    return `${this.baseURL}/projects/${projectId}/cover`;
+  }
+
+  // =============== PROJECT CRUD ===============
+  async getProjects({ page = 1, limit = 12, category = 'all', stage = 'all', search = '', sort = 'recent' } = {}) {
     const params = new URLSearchParams({
-      page,
-      limit,
+      page: page.toString(),
+      limit: limit.toString(),
       sort,
-      ...(category && category !== 'all' && { category }),
-      ...(stage && stage !== 'all' && { stage }),
-      ...(search && { search }),
     });
+
+    if (category && category !== 'all') params.append('category', category);
+    if (stage && stage !== 'all') params.append('stage', stage);
+    if (search) params.append('search', search);
 
     const response = await fetch(`${this.baseURL}/projects?${params}`, {
       credentials: 'include',
@@ -63,51 +76,65 @@ class ProjectService {
     return response.json();
   }
 
-  async getProjectMatches(projectId) {
-    const response = await fetch(`${this.baseURL}/matches/${projectId}`, {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch matches');
-    }
-
-    return response.json();
-  }
-
   async createProject(formData) {
-    const response = await fetch(`${this.baseURL}/projects/create`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    });
+    try {
+      console.log('📤 Creating project...');
+      
+      // Log FormData for debugging
+      for (let pair of formData.entries()) {
+        if (pair[0] === 'logo' || pair[0] === 'coverImage') {
+          console.log(`${pair[0]}:`, pair[1].name, pair[1].type, `${pair[1].size} bytes`);
+        } else {
+          console.log(`${pair[0]}:`, pair[1]);
+        }
+      }
 
-    const data = await response.json();
+      const response = await fetch(`${this.baseURL}/projects/create`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+        // No Content-Type header - let browser set it with boundary
+      });
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to create project');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('❌ Server error:', data);
+        throw new Error(data.message || 'Failed to create project');
+      }
+
+      console.log('✅ Project created:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Create project error:', error);
+      throw error;
     }
-
-    return data;
   }
 
-  async updateProject(projectId, updates) {
-    const response = await fetch(`${this.baseURL}/projects/${projectId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(updates),
-    });
+  async updateProject(projectId, formData) {
+    try {
+      console.log('📤 Updating project:', projectId);
+      
+      const response = await fetch(`${this.baseURL}/projects/${projectId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData,
+        // No Content-Type header - let browser set it with boundary
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to update project');
+      if (!response.ok) {
+        console.error('❌ Server error:', data);
+        throw new Error(data.message || 'Failed to update project');
+      }
+
+      console.log('✅ Project updated:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Update project error:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async deleteProject(projectId) {
@@ -119,12 +146,15 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to delete project');
     }
 
+    console.log('✅ Project deleted:', data);
     return data;
   }
 
+  // =============== INTERACTIONS ===============
   async toggleUpvote(projectId) {
     const response = await fetch(`${this.baseURL}/projects/${projectId}/upvote`, {
       method: 'POST',
@@ -134,6 +164,7 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to process upvote');
     }
 
@@ -153,12 +184,14 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to express interest');
     }
 
     return data;
   }
 
+  // =============== COMMENTS ===============
   async getComments(projectId, page = 1, limit = 20) {
     const response = await fetch(
       `${this.baseURL}/projects/${projectId}/comments?page=${page}&limit=${limit}`,
@@ -185,6 +218,7 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to add comment');
     }
 
@@ -203,6 +237,7 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to delete comment');
     }
 
@@ -221,13 +256,14 @@ class ProjectService {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('❌ Server error:', data);
       throw new Error(data.message || 'Failed to process like');
     }
 
     return data;
   }
 
-  // ✅ UPDATED: Changed endpoint from /users/me/projects to /projects/my-projects
+  // =============== USER PROJECTS ===============
   async getMyProjects() {
     const response = await fetch(`${this.baseURL}/projects/my-projects`, {
       credentials: 'include',
@@ -239,8 +275,21 @@ class ProjectService {
 
     return response.json();
   }
+
+  // =============== MATCHES ===============
+  async getProjectMatches(projectId) {
+    const response = await fetch(`${this.baseURL}/matches/${projectId}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch matches');
+    }
+
+    return response.json();
+  }
 }
 
+// Create singleton instance
 export const projectService = new ProjectService();
-
 export default projectService;
