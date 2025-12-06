@@ -1,53 +1,136 @@
-'use client';
+// utils/notification.js
 
-import { useState, useEffect, useCallback } from 'react';
-import { useUser } from '@/context/AuthContext';
-import notificationService from '@/utils/notification';
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-export function useNotificationCount() {
-  const { user } = useUser();
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+const notificationService = {
+  baseURL,
 
-  const fetchNotificationCount = useCallback(async () => {
-    if (!user) return;
-
+  async getNotifications() {
     try {
-      setLoading(true);
-      const response = await fetch('/api/notifications/unread-count', {
+      const response = await fetch(`${baseURL}/notifications`, {
+        method: 'GET',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setNotificationCount(data.data.unreadCount);
-        }
+      if (!response.ok) {
+        throw new Error(`Failed to fetch notifications: ${response.status}`);
       }
+
+      return await response.json();
     } catch (error) {
-      console.error('Error fetching notification count:', error);
-    } finally {
-      setLoading(false);
+      console.error('Get notifications error:', error);
+      throw error;
     }
-  }, [user]);
+  },
 
-  useEffect(() => {
-    fetchNotificationCount();
+  async getUnreadCount() {
+    try {
+      const response = await fetch(`${baseURL}/notifications/unread-count`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchNotificationCount, 30000);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch unread count: ${response.status}`);
+      }
 
-    return () => clearInterval(interval);
-  }, [fetchNotificationCount]);
+      return await response.json();
+    } catch (error) {
+      console.error('Get unread count error:', error);
+      throw error;
+    }
+  },
 
-  const updateNotificationCount = (newCount) => {
-    setNotificationCount(newCount);
-  };
+  async markAsRead(id) {
+    try {
+      const response = await fetch(`${baseURL}/notifications/${id}/mark-read`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-  return {
-    notificationCount,
-    loading,
-    refetchNotificationCount: fetchNotificationCount,
-    updateNotificationCount
-  };
-}
+      if (!response.ok) {
+        throw new Error(`Failed to mark as read: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Mark as read error:', error);
+      throw error;
+    }
+  },
+
+  async markAllAsRead() {
+    try {
+      const response = await fetch(`${baseURL}/notifications/mark-all-read`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to mark all as read: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Mark all as read error:', error);
+      throw error;
+    }
+  },
+
+  async deleteNotification(id) {
+    try {
+      const response = await fetch(`${baseURL}/notifications/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete notification: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Delete notification error:', error);
+      throw error;
+    }
+  },
+
+  async createNotification(notificationData) {
+    try {
+      const response = await fetch(`${baseURL}/notifications/create`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notificationData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create notification: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Create notification error:', error);
+      throw error;
+    }
+  },
+};
+
+export default notificationService;
