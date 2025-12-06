@@ -18,7 +18,14 @@ export default function LoginPage() {
   const timeoutRef = useRef(null);
 
   const router = useRouter();
-  const { fetchUser } = useUser();
+  const { login, user, loading } = useUser();
+
+  // Redirect if already logged in (but wait for loading to complete)
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/projects');
+    }
+  }, [user, loading, router]);
 
   // Detect mobile screens
   useEffect(() => {
@@ -54,6 +61,14 @@ export default function LoginPage() {
         [name]: ''
       }));
     }
+    
+    // Clear general error too
+    if (errors.general) {
+      setErrors(prev => ({
+        ...prev,
+        general: ''
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -82,19 +97,42 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      await authService.login(formData);
-      await fetchUser();
+      // Call login API
+      const response = await authService.login(formData);
       
+      // Check if login requires email verification
+      if (response.requiresVerification) {
+        setErrors({ 
+          general: 'Please verify your email before logging in. Check your inbox for the verification code.' 
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Update context with user data
+      login(response.user);
+      
+      // Show success message
       setLoginSuccess(true);
       
+      // Redirect after short delay
       timeoutRef.current = setTimeout(() => {
-        setLoginSuccess(false);
         router.push('/projects');
-      }, 2000);
-
+      }, 1500);
+      
     } catch (error) {
       console.error('Login failed:', error);
-      setErrors({ general: error.message || 'Login failed. Please try again.' });
+      
+      // Handle specific error messages
+      if (error.message === 'Please verify your email before logging in') {
+        setErrors({ 
+          general: 'Please verify your email before logging in. Check your inbox for the verification code.' 
+        });
+      } else if (error.message.includes('credentials') || error.message.includes('password')) {
+        setErrors({ general: 'Invalid email/username or password. Please try again.' });
+      } else {
+        setErrors({ general: error.message || 'Login failed. Please try again.' });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +145,15 @@ export default function LoginPage() {
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
   );
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
+        <LoadingSpinner className="h-8 w-8 text-teal-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center p-4 font-sans">
@@ -125,7 +172,6 @@ export default function LoginPage() {
                      <span className="text-orange-400">dr</span>Geeks
                      </span>
               </div>
-              
             </div>
           </motion.div>
         )}
@@ -255,6 +301,7 @@ export default function LoginPage() {
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your email or username"
+                  disabled={isSubmitting}
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
               </div>
@@ -273,11 +320,13 @@ export default function LoginPage() {
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your password"
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-11 text-teal-500 hover:text-teal-700"
+                  className="absolute right-3 top-11 text-teal-500 hover:text-teal-700 disabled:opacity-50"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isSubmitting}
                 >
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -317,7 +366,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-6 text-center text-xs text-teal-500">
-              <p>By continuing, you agree to our <a href="terms-of-service" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="/privacy-policy" className="text-teal-600 hover:underline">Privacy Policy</a></p>
+              <p>By continuing, you agree to our <a href="/terms-of-service" className="text-teal-600 hover:underline">Terms of Service</a> and <a href="/privacy-policy" className="text-teal-600 hover:underline">Privacy Policy</a></p>
             </div>
           </div>
         </div>

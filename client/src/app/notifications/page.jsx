@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
 import notificationService from '@/utils/notification';
@@ -8,36 +8,46 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 
 export default function Notifications() {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [fetching, setFetching] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
     handleResize();
+    window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    if (loading || !user) return;
-    loadNotifications();
-  }, [user, loading]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    
     try {
       setFetching(true);
+      setError(null);
       const res = await notificationService.getNotifications();
-      if (res.success) setNotifications(res.data.notifications);
+      if (res.success) {
+        setNotifications(res.data.notifications || []);
+      } else {
+        throw new Error(res.message || 'Failed to load notifications');
+      }
     } catch (err) {
-      console.error('Failed to load notifications');
+      console.error('Failed to load notifications:', err);
+      setError(err.message || 'Failed to load notifications. Please try again.');
+      setNotifications([]);
     } finally {
       setFetching(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (userLoading || !user) return;
+    loadNotifications();
+  }, [user, userLoading, loadNotifications]);
 
   const markAsRead = async (id, link) => {
     try {
@@ -45,7 +55,7 @@ export default function Notifications() {
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       if (link) router.push(link);
     } catch (err) {
-      console.error('Mark read failed');
+      console.error('Mark read failed:', err);
     }
   };
 
@@ -54,7 +64,7 @@ export default function Notifications() {
       await notificationService.markAllAsRead();
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (err) {
-      console.error('Mark all read failed');
+      console.error('Mark all read failed:', err);
     }
   };
 
@@ -63,7 +73,7 @@ export default function Notifications() {
       await notificationService.deleteNotification(id);
       setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (err) {
-      console.error('Delete failed');
+      console.error('Delete failed:', err);
     }
   };
 
@@ -122,9 +132,30 @@ export default function Notifications() {
     return 'bg-teal-100';
   };
 
+  // Professional Skeleton Loader Component
+  const NotificationSkeleton = () => (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-pulse">
+      {[1, 2, 3, 4].map((item) => (
+        <div key={item} className="p-4 border-b border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div className="flex items-center justify-between">
+                <div className="h-3 bg-gray-200 rounded w-20"></div>
+                <div className="h-3 bg-gray-200 rounded w-10"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  if (loading) {
+  if (userLoading) {
     return (
       <div className="min-h-screen bg-white">
         <Sidebar activeTab="notifications" />
@@ -138,6 +169,11 @@ export default function Notifications() {
     );
   }
 
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Sidebar activeTab="notifications" />
@@ -149,17 +185,17 @@ export default function Notifications() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-              {unreadCount > 0 && (
+              {!fetching && unreadCount > 0 && (
                 <span className="bg-red-500 text-white text-sm px-2 py-1 rounded-full">
                   {unreadCount}
                 </span>
               )}
             </div>
             <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
+              {!fetching && unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-1 border border-teal-200 rounded-lg hover:bg-teal-50"
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium px-3 py-1 border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
                 >
                   Mark all read
                 </button>
@@ -178,17 +214,39 @@ export default function Notifications() {
             </div>
           </div>
 
-          {/* Notification List */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            {notifications.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <p className="text-gray-600">No notifications yet</p>
-                <p className="text-gray-400 text-sm mt-1">We'll notify you when something happens</p>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-red-600">{error}</p>
+                </div>
+                <button
+                  onClick={loadNotifications}
+                  className="text-sm text-red-700 hover:text-red-800 font-medium"
+                >
+                  Retry
+                </button>
               </div>
-            ) : (
+            </div>
+          )}
+
+          {/* Notification List or Skeleton */}
+          {fetching ? (
+            <NotificationSkeleton />
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-12 bg-white border border-gray-200 rounded-xl">
+              <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <p className="text-gray-600">No notifications yet</p>
+              <p className="text-gray-400 text-sm mt-1">We'll notify you when something happens</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="divide-y divide-gray-100">
                 {notifications.map((n) => (
                   <div
@@ -222,7 +280,7 @@ export default function Notifications() {
                               e.stopPropagation();
                               deleteNotification(n._id);
                             }}
-                            className="text-red-500 hover:text-red-700 text-xs font-medium"
+                            className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
                           >
                             Delete
                           </button>
@@ -232,8 +290,8 @@ export default function Notifications() {
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

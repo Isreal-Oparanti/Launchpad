@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
-import projectService from '@/utils/project'; 
+import projectService from '@/utils/project';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import SessionExpiryWarning from '@/components/SessionExpiryWarning';
@@ -11,12 +11,12 @@ import SessionExpiryWarning from '@/components/SessionExpiryWarning';
 const ProjectsPage = () => {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
- 
+  
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
+  
   const [category, setCategory] = useState('all');
   const [stage, setStage] = useState('all');
   const [sort, setSort] = useState('recent');
@@ -27,30 +27,36 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('projects');
-
+  
   const observerTarget = useRef(null);
-
-  // Debounced search to prevent too many API calls
   const debouncedSearch = useRef(null);
 
   const fetchProjects = useCallback(async (pageNum, isRefresh = false) => {
+    if (userLoading) return;
+    
     try {
       setLoading(true);
       
       const response = await projectService.getProjects({
         page: pageNum,
         limit: 12,
-        category,
-        stage,
-        search: searchQuery,
+        category: category !== 'all' ? category : undefined,
+        stage: stage !== 'all' ? stage : undefined,
+        search: searchQuery || undefined,
         sort
       });
       
       if (response.success) {
+        const projectsWithImages = response.data.projects.map(project => ({
+          ...project,
+          logoUrl: project.logo ? projectService.getLogoUrl(project._id) : null,
+          coverImageUrl: project.coverImage ? projectService.getCoverImageUrl(project._id) : null
+        }));
+        
         if (isRefresh || pageNum === 1) {
-          setProjects(response.data.projects);
+          setProjects(projectsWithImages);
         } else {
-          setProjects(prev => [...prev, ...response.data.projects]);
+          setProjects(prev => [...prev, ...projectsWithImages]);
         }
         setHasMore(response.data.pagination.hasMore);
         setPage(pageNum);
@@ -62,7 +68,7 @@ const ProjectsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [category, stage, searchQuery, sort]); 
+  }, [category, stage, searchQuery, sort, userLoading]);
 
   // Debounced search effect
   useEffect(() => {
@@ -85,6 +91,13 @@ const ProjectsPage = () => {
   useEffect(() => {
     fetchProjects(1, true);
   }, [category, stage, sort, fetchProjects]);
+
+  // Initial load and user change
+  useEffect(() => {
+    if (!userLoading) {
+      fetchProjects(1, true);
+    }
+  }, [userLoading, fetchProjects]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -132,7 +145,6 @@ const ProjectsPage = () => {
       await projectService.toggleUpvote(projectId);
     } catch (error) {
       console.error('Upvote error:', error);
-      // Check if unauthorized
       if (error.response?.status === 401 || error.message?.includes('token')) {
         alert('Your session has expired. Please login again.');
         router.push('/login');
@@ -191,26 +203,49 @@ const ProjectsPage = () => {
         className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 hover:border-teal-300 w-full"
       >
         {/* Cover Image with Logo */}
-        {project.coverImage && (
-          <div className="relative h-48 bg-gradient-to-br from-teal-50 to-blue-50 overflow-hidden">
+        <div className="relative h-48 bg-gradient-to-br from-teal-50 to-blue-50 overflow-hidden">
+          {project.coverImageUrl ? (
             <img
-              src={project.coverImage}
+              src={project.coverImageUrl}
               alt={project.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              onError={(e) => {
+                console.error('Cover image failed to load:', project.coverImageUrl);
+                e.target.style.display = 'none';
+              }}
             />
-            <div className="absolute top-3 right-3">
-              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getStageColor(project.stage)}`}>
-                {project.stage}
-              </span>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-teal-400 to-blue-500 flex items-center justify-center">
+              <span className="text-white text-2xl font-bold opacity-30">{project.title.charAt(0)}</span>
             </div>
-            {/* Logo Badge */}
-            {project.logo && (
-              <div className="absolute bottom-3 left-3 w-12 h-12 bg-white rounded-lg shadow-md p-1.5 border border-gray-100">
-                <img src={project.logo} alt={`${project.title} logo`} className="w-full h-full object-contain" />
-              </div>
-            )}
+          )}
+          
+          <div className="absolute top-3 right-3">
+            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getStageColor(project.stage)}`}>
+              {project.stage}
+            </span>
           </div>
-        )}
+          
+          {/* Logo Badge */}
+          {project.logoUrl && (
+            <div className="absolute bottom-3 left-3 w-12 h-12 bg-white rounded-lg shadow-md p-1.5 border border-gray-100">
+              <img 
+                src={project.logoUrl} 
+                alt={`${project.title} logo`} 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  console.error('Logo failed to load:', project.logoUrl);
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `
+                    <div class="w-full h-full flex items-center justify-center bg-teal-100 text-teal-600 font-bold text-xs rounded">
+                      ${project.title.charAt(0).toUpperCase()}
+                    </div>
+                  `;
+                }}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Content */}
         <div className="p-5">
@@ -223,19 +258,19 @@ const ProjectsPage = () => {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {project.tags.slice(0, 3).map((tag, idx) => (
+            {project.tags?.slice(0, 3).map((tag, idx) => (
               <span key={idx} className="px-2.5 py-1 bg-teal-50 text-teal-700 text-xs rounded-md font-medium">
                 #{tag}
               </span>
             ))}
-            {project.tags.length > 3 && (
+            {project.tags?.length > 3 && (
               <span className="px-2.5 py-1 bg-gray-50 text-gray-500 text-xs rounded-md font-medium">
                 +{project.tags.length - 3}
               </span>
             )}
           </div>
 
-          {/* Needed Roles Badge - Simplified */}
+          {/* Needed Roles Badge */}
           {project.neededRoles?.length > 0 && (
             <div className="mb-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 text-xs rounded-lg font-medium border border-orange-200">
@@ -269,7 +304,6 @@ const ProjectsPage = () => {
                   </span>
                 )}
               </div>
-              {console.log(project.creator)}
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-900 group-hover:text-teal-600 transition-colors">
                   {project.creator.fullName}
@@ -350,7 +384,7 @@ const ProjectsPage = () => {
             </div>
           </div>
 
-          {/* Stats Row - Professional Alignment */}
+          {/* Stats Row */}
           <div className="flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5 font-medium">
@@ -377,11 +411,11 @@ const ProjectsPage = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white font-sans">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {/* Main Content Area - Full Width */}
+      {/* Main Content Area */}
       <div className="md:ml-64">
         <Header />
         
-        {/* Projects Page Content - Full Width */}
+        {/* Projects Page Content */}
         <div className="w-full">
           {/* Header - Sticky */}
           <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm z-[9]">
@@ -391,7 +425,7 @@ const ProjectsPage = () => {
                   <h1 className="text-xl md:text-2xl font-bold text-gray-900">Explore Projects</h1>
                   <p className="text-sm text-gray-500 mt-1">Discover innovative ideas and collaborations</p>
                 </div>
-                {/* Icon button for create project */}
+                {/* Create Project Button */}
                 <button
                   onClick={() => {
                     setSelectedProject(null);
@@ -436,7 +470,7 @@ const ProjectsPage = () => {
               {/* Filter Panel */}
               {showFilters && (
                 <div className="mt-4 pb-2 border-t border-gray-100 pt-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-700">Category:</span>
                       <select
@@ -488,7 +522,7 @@ const ProjectsPage = () => {
             </div>
           </div>
 
-          {/* Projects Grid - 2 columns on desktop, 1 on mobile */}
+          {/* Projects Grid */}
           <div className="px-2 py-2 md:px-6 md:py-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {projects.map((project) => (
@@ -550,7 +584,7 @@ const ProjectsPage = () => {
           </div>
         </div>
 
-        {/* Modals remain the same */}
+        {/* Create/Edit Project Modal */}
         {showCreateModal && (
           <CreateProjectModal
             project={selectedProject}
@@ -577,9 +611,14 @@ const ProjectsPage = () => {
                 </svg>
               </div>
               
-              <h3 className="text-xl font-bold text-teal-900 text-center mb-2">Project Published!</h3>
+              <h3 className="text-xl font-bold text-teal-900 text-center mb-2">
+                {selectedProject ? 'Project Updated!' : 'Project Published!'}
+              </h3>
               <p className="text-teal-700 text-center mb-6">
-                Your Project is now live on FoundrGeeks.
+                {selectedProject 
+                  ? 'Your project has been updated successfully.'
+                  : 'Your project is now live on FoundrGeeks.'
+                }
               </p>
               
               <button
@@ -638,6 +677,7 @@ const ProjectsPage = () => {
   );
 };
 
+// Create Project Modal Component
 const CreateProjectModal = ({ onClose, onSuccess, project }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -656,8 +696,8 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
   });
   const [tagInput, setTagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [logoPreview, setLogoPreview] = useState(project?.logo || null);
-  const [coverPreview, setCoverPreview] = useState(project?.coverImage || null);
+  const [logoPreview, setLogoPreview] = useState(project?.logo ? projectService.getLogoUrl(project._id) : null);
+  const [coverPreview, setCoverPreview] = useState(project?.coverImage ? projectService.getCoverImageUrl(project._id) : null);
   const [showTeamNeeds, setShowTeamNeeds] = useState((project?.neededRoles || []).length > 0);
   const [currentRole, setCurrentRole] = useState({
     role: 'Co-founder',
@@ -682,17 +722,36 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
       submitData.append('targetMarket', formData.targetMarket);
       submitData.append('category', formData.category);
       submitData.append('stage', formData.stage);
-      submitData.append('tags', JSON.stringify(formData.tags));
-      submitData.append('demoUrl', formData.demoUrl);
+      submitData.append('demoUrl', formData.demoUrl || '');
       submitData.append('isPublished', 'true');
       
-      // Append team needs if any
+      // Append tags and neededRoles as JSON strings
+      submitData.append('tags', JSON.stringify(formData.tags));
+      
       if (formData.neededRoles.length > 0) {
         submitData.append('neededRoles', JSON.stringify(formData.neededRoles));
       }
 
-      if (formData.logo instanceof File) submitData.append('logo', formData.logo);
-      if (formData.coverImage instanceof File) submitData.append('coverImage', formData.coverImage);
+      // Append logo image if present
+      if (formData.logo instanceof File) {
+        console.log('📤 Appending logo file:', formData.logo.name, formData.logo.size);
+        submitData.append('logo', formData.logo, formData.logo.name);
+      }
+
+      // Append cover image if present
+      if (formData.coverImage instanceof File) {
+        console.log('📤 Appending cover image:', formData.coverImage.name, formData.coverImage.size);
+        submitData.append('coverImage', formData.coverImage, formData.coverImage.name);
+      }
+
+      console.log('📤 FormData being sent:');
+      for (let pair of submitData.entries()) {
+        if (pair[0] === 'logo' || pair[0] === 'coverImage') {
+          console.log(pair[0] + ':', pair[1].name, pair[1].type, pair[1].size + ' bytes');
+        } else {
+          console.log(pair[0] + ':', pair[1]);
+        }
+      }
 
       let response;
       if (project) {
@@ -702,12 +761,13 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
       }
       
       if (response.success) {
+        console.log('✅ Project saved successfully:', response.data);
         onSuccess();
       } else {
         alert(response.message || 'Failed to save project');
       }
     } catch (error) {
-      console.error('Save project error:', error);
+      console.error('❌ Save project error:', error);
       if (error.response?.status === 401 || error.message?.includes('token')) {
         alert('Your session has expired. Please login again.');
         window.location.href = '/login';
@@ -1194,7 +1254,7 @@ const CreateProjectModal = ({ onClose, onSuccess, project }) => {
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Role Description (Recommended for smarter ai match)</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Role Description (Recommended for smarter AI match)</label>
                           <textarea
                             value={currentRole.description}
                             onChange={(e) => setCurrentRole({ ...currentRole, description: e.target.value })}
