@@ -3,6 +3,8 @@
 import { useUser } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useNotificationCount } from '@/hooks/useNotificationCount';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { useState, useEffect } from 'react';
 
 export function Sidebar() {
   const { user, logout } = useUser();
@@ -10,7 +12,32 @@ export function Sidebar() {
   const pathname = usePathname();
   
   // Use real notification count
-  const { notificationCount, showBadge } = useNotificationCount();
+  const { notificationCount: notificationBadgeCount, showBadge: showNotificationBadge } = useNotificationCount();
+  
+  // Use real unread message count with real-time updates
+  const { unreadMessageCount, showBadge: showMessageBadge, refetchUnreadCount } = useUnreadMessageCount();
+
+  // Listen for message events for real-time updates
+  useEffect(() => {
+    const handleMessageEvents = () => {
+      refetchUnreadCount();
+    };
+
+    // Listen for custom events from message page
+    window.addEventListener('newMessageReceived', handleMessageEvents);
+    window.addEventListener('messagesMarkedAsRead', handleMessageEvents);
+    window.addEventListener('refreshMessageBadges', handleMessageEvents);
+
+    // Also poll more frequently in sidebar (every 5 seconds)
+    const interval = setInterval(refetchUnreadCount, 5000);
+
+    return () => {
+      window.removeEventListener('newMessageReceived', handleMessageEvents);
+      window.removeEventListener('messagesMarkedAsRead', handleMessageEvents);
+      window.removeEventListener('refreshMessageBadges', handleMessageEvents);
+      clearInterval(interval);
+    };
+  }, [refetchUnreadCount]);
 
   const navigationItems = [
     {
@@ -42,7 +69,7 @@ export function Sidebar() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      badge: 3,
+      badge: showMessageBadge ? unreadMessageCount : null,
     },
     {
       id: 'notifications',
@@ -53,7 +80,7 @@ export function Sidebar() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      badge: showBadge ? notificationCount : null,
+      badge: showNotificationBadge ? notificationBadgeCount : null,
     },
     {
       id: 'profile',
@@ -86,7 +113,7 @@ export function Sidebar() {
   };
 
   const isActive = (path) => {
-    return pathname === path;
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
@@ -96,14 +123,14 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-        <span> 
-          <img 
-            src="favicon/android-chrome-512x512.png" 
-            alt="foundrgeeks logo" 
-            className={`object-cover w-11 h-11`}
-          />
-        </span>
-        <span className="font-bold text-teal-800">Foun<span className="text-orange-500">dr</span>Geeks</span>  
+            <span> 
+              <img 
+                src="favicon/android-chrome-512x512.png" 
+                alt="foundrgeeks logo" 
+                className={`object-cover w-11 h-11`}
+              />
+            </span>
+            <span className="font-bold text-teal-800">Foun<span className="text-orange-500">dr</span>Geeks</span>  
           </div>
         </div>
 
@@ -125,7 +152,7 @@ export function Sidebar() {
                 </div>
                 <span className="flex-1 text-left">{item.label}</span>
                 {item.badge && item.badge > 0 && (
-                  <span className="bg-teal-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
@@ -161,7 +188,7 @@ export function Sidebar() {
             onClick={logout}
             className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] font-medium text-gray-700 hover:bg-gray-50 transition-all"
           >
-            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             <span>Sign Out</span>

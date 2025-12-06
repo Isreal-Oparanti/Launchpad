@@ -5,7 +5,7 @@ import { useUser } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import { useState, useEffect } from 'react';
-import { messageService } from '@/utils/message';
+import messageService from '@/utils/message';
 
 export default function ChatListPage() {
   const router = useRouter();
@@ -64,6 +64,22 @@ export default function ChatListPage() {
     
     const text = conversation.lastMessage.text;
     return text.length > 50 ? text.substring(0, 50) + '...' : text;
+  };
+
+  const markConversationAsRead = async (userId) => {
+    try {
+      await messageService.markConversationAsRead(userId);
+      
+      // Update local state
+      setConversations(prev => prev.map(conv => {
+        if (conv.userId === userId) {
+          return { ...conv, unreadCount: 0 };
+        }
+        return conv;
+      }));
+    } catch (error) {
+      console.error('Error marking conversation as read:', error);
+    }
   };
 
   if (loading) {
@@ -125,12 +141,42 @@ export default function ChatListPage() {
               </div>
             )}
 
+            {/* Total Unread Count */}
+            {conversations.length > 0 && (
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    {conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)} unread message(s)
+                  </span>
+                  <button
+                    onClick={() => {
+                      // Mark all as read
+                      conversations.forEach(conv => {
+                        if (conv.unreadCount > 0) {
+                          markConversationAsRead(conv.userId);
+                        }
+                      });
+                    }}
+                    className="ml-auto text-sm text-teal-600 hover:text-teal-800 font-medium"
+                  >
+                    Mark all as read
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Conversations List */}
             <div className="divide-y divide-gray-200">
               {conversations.length > 0 ? conversations.map((conversation) => (
                 <div
                   key={conversation.userId}
-                  onClick={() => router.push(`/message/${conversation.userId}`)}
+                  onClick={() => {
+                    // Mark conversation as read when clicked
+                    if (conversation.unreadCount > 0) {
+                      markConversationAsRead(conversation.userId);
+                    }
+                    router.push(`/message/${conversation.userId}`);
+                  }}
                   className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-4">
@@ -152,13 +198,13 @@ export default function ChatListPage() {
                           {conversation.userName}
                         </h3>
                         {conversation.unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center">
+                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center font-bold">
                             {conversation.unreadCount}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-gray-600 mb-1 truncate">{conversation.userTitle}</p>
-                      <p className="text-sm text-gray-500 truncate">
+                      <p className={`text-sm truncate ${conversation.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
                         {getLastMessagePreview(conversation)}
                       </p>
                     </div>
