@@ -2,8 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
@@ -16,6 +14,7 @@ const projectRoutes = require('./routes/projectRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');  
 const matchesRoutes = require('./routes/matchRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+
 // ======================
 // Environment Configuration
 // ======================
@@ -68,7 +67,7 @@ const connectDatabase = async () => {
 };
 
 // ======================
-// CORS Configuration
+// CORS Configuration - FIXED
 // ======================
 const getCorsOptions = () => {
   const baseOrigins = ['http://localhost:3000', 'http://localhost:3001'];
@@ -80,7 +79,14 @@ const getCorsOptions = () => {
       ],
       credentials: true, 
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'Cache-Control',
+        'Pragma',
+        'If-Modified-Since'
+      ],
       exposedHeaders: ['Set-Cookie'], 
       maxAge: 86400
     };
@@ -89,7 +95,14 @@ const getCorsOptions = () => {
       origin: baseOrigins,
       credentials: true, 
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowedHeaders: [
+        'Content-Type', 
+        'Authorization', 
+        'X-Requested-With',
+        'Cache-Control',
+        'Pragma',
+        'If-Modified-Since'
+      ],
       exposedHeaders: ['Set-Cookie'], 
       maxAge: 86400
     };
@@ -103,17 +116,22 @@ const getCorsOptions = () => {
 // Apply CORS middleware FIRST
 app.use(cors(getCorsOptions()));
 
+// ✅ REMOVED: This line causes the error
+// app.options('*', cors(getCorsOptions()));
+
+// ✅ ADDED: Handle preflight requests for all routes
+// app.options('/*', (req, res) => {
+//   res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+//   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cache-Control');
+//   res.header('Access-Control-Allow-Credentials', 'true');
+//   res.sendStatus(200);
+// });
+
 // Helmet for security headers
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: isProduction ? {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  } : false, 
+  contentSecurityPolicy: false, // Disable CSP for development
 }));
 
 app.use(compression());
@@ -172,6 +190,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes); 
 app.use('/api/matches', matchesRoutes);
 app.use('/api/messages', messageRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -295,6 +314,7 @@ const startServer = async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
+      console.log(`🌍 CORS Allowed Origins: ${getCorsOptions().origin.join(', ')}`);
       
       if (!isProduction) {
         console.log(`🔧 Debug info: http://localhost:${PORT}/debug/env`);

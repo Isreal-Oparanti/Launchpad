@@ -7,11 +7,11 @@ class ProjectService {
 
   // =============== IMAGE URL HELPERS ===============
   getLogoUrl(projectId) {
-    return `${this.baseURL}/projects/${projectId}/logo`;
+    return `${this.baseURL}/projects/${projectId}/logo?t=${Date.now()}`; // Cache busting
   }
 
   getCoverImageUrl(projectId) {
-    return `${this.baseURL}/projects/${projectId}/cover`;
+    return `${this.baseURL}/projects/${projectId}/cover?t=${Date.now()}`; // Cache busting
   }
 
   // =============== PROJECT CRUD ===============
@@ -28,6 +28,9 @@ class ProjectService {
 
     const response = await fetch(`${this.baseURL}/projects?${params}`, {
       credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
     });
 
     if (!response.ok) {
@@ -40,6 +43,9 @@ class ProjectService {
   async getFeaturedProjects() {
     const response = await fetch(`${this.baseURL}/projects/featured`, {
       credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
     });
 
     if (!response.ok) {
@@ -52,6 +58,9 @@ class ProjectService {
   async getTrendingProjects() {
     const response = await fetch(`${this.baseURL}/projects/trending`, {
       credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
     });
 
     if (!response.ok) {
@@ -64,6 +73,9 @@ class ProjectService {
   async getProject(projectId) {
     const response = await fetch(`${this.baseURL}/projects/${projectId}`, {
       credentials: 'include',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
     });
 
     if (!response.ok) {
@@ -284,6 +296,19 @@ class ProjectService {
 
     if (!response.ok) {
       throw new Error('Failed to fetch matches');
+    }
+
+    return response.json();
+  }
+
+  // =============== DEBUG IMAGES ===============
+  async debugProjectImages(projectId) {
+    const response = await fetch(`${this.baseURL}/projects/${projectId}/debug-images`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to debug images');
     }
 
     return response.json();
