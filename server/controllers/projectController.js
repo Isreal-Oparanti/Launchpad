@@ -1,10 +1,8 @@
 const Project = require('../models/Project');
 const { recordProjectView } = require('../utils/viewTracking');
-const fs = require('fs');
-const path = require('path');
 
 class ProjectController {
-async createProject(req, res) {
+  async createProject(req, res) {
     try {
       console.log('===== CREATE PROJECT DEBUG =====');
       console.log('Headers:', req.headers);
@@ -13,7 +11,6 @@ async createProject(req, res) {
       console.log('req.user:', req.user);
       console.log('================================');
 
-      // Handle form data parsing errors
       if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({
           success: false,
@@ -21,10 +18,8 @@ async createProject(req, res) {
         });
       }
 
-      // Parse string fields from form data
       const requiredFields = ['title', 'tagline', 'problemStatement', 'solution', 'targetMarket', 'category', 'stage'];
       
-      // Check if fields exist in req.body (they come as strings in FormData)
       for (const field of requiredFields) {
         if (!req.body[field] || req.body[field].trim() === '') {
           return res.status(400).json({
@@ -34,7 +29,6 @@ async createProject(req, res) {
         }
       }
 
-      // Parse tags
       let tags = [];
       if (req.body.tags) {
         try {
@@ -45,7 +39,6 @@ async createProject(req, res) {
         }
       }
 
-      // Parse neededRoles
       let neededRoles = [];
       if (req.body.neededRoles) {
         try {
@@ -58,7 +51,6 @@ async createProject(req, res) {
         }
       }
 
-      // Create project data object
       const projectData = {
         title: req.body.title,
         tagline: req.body.tagline,
@@ -78,7 +70,6 @@ async createProject(req, res) {
         interestCount: 0,
       };
 
-      // Handle logo upload
       if (req.files && req.files.logo && req.files.logo[0]) {
         console.log('✅ Logo file received:', req.files.logo[0].originalname);
         projectData.logo = {
@@ -88,7 +79,6 @@ async createProject(req, res) {
         };
       }
 
-      // Handle cover image upload
       if (req.files && req.files.coverImage && req.files.coverImage[0]) {
         console.log('✅ Cover image received:', req.files.coverImage[0].originalname);
         projectData.coverImage = {
@@ -109,7 +99,6 @@ async createProject(req, res) {
 
       console.log('✅ Project created successfully:', newProject._id);
 
-      // Populate creator data for response
       await newProject.populate('creator', 'fullName profilePicture title initials');
 
       res.status(201).json({
@@ -127,17 +116,15 @@ async createProject(req, res) {
     }
   }
   
-   async getAllProjects(req, res) {
+  async getAllProjects(req, res) {
     try {
       const { page = 1, limit = 12, category, stage, search, sort = 'recent' } = req.query;
       const skip = (page - 1) * limit;
       const query = { isPublished: true };
 
-      // Build query efficiently
       if (category && category !== 'all') query.category = category;
       if (stage && stage !== 'all') query.stage = stage;
       
-      // Use regex for search instead of $text for better performance
       if (search && search.trim()) {
         query.$or = [
           { title: { $regex: search, $options: 'i' } },
@@ -159,13 +146,13 @@ async createProject(req, res) {
           sortQuery = { createdAt: -1 };
       }
 
-      // Select only necessary fields for performance
-      const selectFields = 'title tagline problemStatement stage category tags coverImage logo upvoteCount viewCount commentCount interestCount neededRoles createdAt lastActivityAt creator';
+      // Include logo and coverImage fields to check existence
+      const selectFields = 'title tagline problemStatement stage category tags upvoteCount viewCount commentCount interestCount neededRoles createdAt lastActivityAt creator logo coverImage';
 
       const [projects, total] = await Promise.all([
         Project.find(query)
           .select(selectFields)
-          .populate('creator', 'fullName profilePicture title initials') // Added title field
+          .populate('creator', 'fullName profilePicture title initials')
           .sort(sortQuery)
           .skip(skip)
           .limit(parseInt(limit))
@@ -173,22 +160,27 @@ async createProject(req, res) {
         Project.countDocuments(query),
       ]);
 
-      // Process projects efficiently
-      const userId = req.user?._id?.toString();
-      const projectsWithUserData = projects.map((project) => ({
-        ...project,
-        hasUpvoted: userId ? project.upvotes?.some(id => id.toString() === userId) : false,
-        hasExpressedInterest: userId
-          ? project.interestedInvestors?.some(i => i.user?.toString() === userId)
-          : false,
-        upvotes: undefined,
-        interestedInvestors: undefined,
-      }));
+      // ✅ FIX: Correctly determine if images exist
+      const projectsWithMetadata = projects.map((project) => {
+        const hasLogo = !!project.logo;
+        const hasCoverImage = !!project.coverImage;
+        
+        // Remove binary data from response
+        const { logo, coverImage, ...rest } = project;
+        
+        return {
+          ...rest,
+          hasLogo,
+          hasCoverImage,
+          hasUpvoted: false,
+          hasExpressedInterest: false,
+        };
+      });
 
       res.json({
         success: true,
         data: {
-          projects: projectsWithUserData,
+          projects: projectsWithMetadata,
           pagination: {
             page: parseInt(page),
             limit: parseInt(limit),
@@ -210,14 +202,28 @@ async createProject(req, res) {
   async getFeaturedProjects(req, res) {
     try {
       const projects = await Project.find({ isPublished: true })
+        .select('title tagline stage category tags upvoteCount viewCount commentCount createdAt creator logo coverImage')
         .sort({ upvoteCount: -1, viewCount: -1 })
         .limit(6)
         .populate('creator', 'fullName profilePicture school major initials')
         .lean();
 
+      // ✅ Add hasLogo and hasCoverImage flags
+      const projectsWithMetadata = projects.map(project => {
+        const hasLogo = !!project.logo;
+        const hasCoverImage = !!project.coverImage;
+        const { logo, coverImage, ...rest } = project;
+        
+        return {
+          ...rest,
+          hasLogo,
+          hasCoverImage
+        };
+      });
+
       res.json({
         success: true,
-        data: projects,
+        data: projectsWithMetadata,
       });
     } catch (error) {
       console.error('Get featured projects error:', error);
@@ -231,14 +237,28 @@ async createProject(req, res) {
   async getTrendingProjects(req, res) {
     try {
       const projects = await Project.find({ isPublished: true })
+        .select('title tagline stage category tags upvoteCount viewCount commentCount lastActivityAt createdAt creator logo coverImage')
         .sort({ lastActivityAt: -1, upvoteCount: -1 })
         .limit(10)
         .populate('creator', 'fullName profilePicture school major initials')
         .lean();
 
+      // ✅ Add hasLogo and hasCoverImage flags
+      const projectsWithMetadata = projects.map(project => {
+        const hasLogo = !!project.logo;
+        const hasCoverImage = !!project.coverImage;
+        const { logo, coverImage, ...rest } = project;
+        
+        return {
+          ...rest,
+          hasLogo,
+          hasCoverImage
+        };
+      });
+
       res.json({
         success: true,
-        data: projects,
+        data: projectsWithMetadata,
       });
     } catch (error) {
       console.error('Get trending projects error:', error);
@@ -249,50 +269,52 @@ async createProject(req, res) {
     }
   }
 
-   async getProjectById(req, res) {
-  try {
-    const project = await Project.findById(req.params.id)
-      .populate('creator', 'fullName profilePicture title email initials')
-      .populate('teamMembers.user', 'fullName profilePicture title initials');
+  async getProjectById(req, res) {
+    try {
+      const project = await Project.findById(req.params.id)
+        .select('-logo.data -coverImage.data')
+        .populate('creator', 'fullName profilePicture title email initials')
+        .populate('teamMembers.user', 'fullName profilePicture title initials')
+        .lean();
 
-    if (!project) {
-      return res.status(404).json({
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: 'Project not found',
+        });
+      }
+
+      // ✅ Record view asynchronously
+      recordProjectView(project._id, req).catch(err => 
+        console.error('View recording error:', err)
+      );
+
+      const userId = req.user?._id?.toString();
+      
+      // Add metadata flags
+      project.hasLogo = !!(project.logo);
+      project.hasCoverImage = !!(project.coverImage);
+      project.hasUpvoted = false;
+      project.hasExpressedInterest = false;
+      
+      // Clean up
+      delete project.upvotes;
+      delete project.interestedInvestors;
+
+      res.json({
+        success: true,
+        data: project,
+      });
+    } catch (error) {
+      console.error('Get project error:', error);
+      res.status(500).json({
         success: false,
-        message: 'Project not found',
+        message: 'Failed to fetch project',
       });
     }
-
-    // ✅ FIXED: Record view asynchronously without blocking response
-    // This runs in background and doesn't slow down page load
-    recordProjectView(project._id, req).catch(err => 
-      console.error('View recording error:', err)
-    );
-
-    const projectData = project.toObject();
-    const userId = req.user?._id?.toString();
-    
-    projectData.hasUpvoted = userId ? project.upvotes.some(id => id.toString() === userId) : false;
-    projectData.hasExpressedInterest = userId
-      ? project.interestedInvestors.some(i => i.user.toString() === userId)
-      : false;
-    
-    delete projectData.upvotes;
-    delete projectData.interestedInvestors;
-
-    res.json({
-      success: true,
-      data: projectData,
-    });
-  } catch (error) {
-    console.error('Get project error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch project',
-    });
   }
-}
 
- async updateProject(req, res) {
+  async updateProject(req, res) {
     try {
       const existingProject = await Project.findById(req.params.id);
 
@@ -310,7 +332,6 @@ async createProject(req, res) {
         });
       }
 
-      // Parse tags if provided
       if (req.body.tags) {
         try {
           existingProject.tags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
@@ -319,7 +340,6 @@ async createProject(req, res) {
         }
       }
 
-      // Parse neededRoles if provided
       if (req.body.neededRoles) {
         try {
           existingProject.neededRoles = typeof req.body.neededRoles === 'string' ? JSON.parse(req.body.neededRoles) : req.body.neededRoles;
@@ -328,7 +348,6 @@ async createProject(req, res) {
         }
       }
 
-      // Update other fields
       const updatableFields = [
         'title', 'tagline', 'problemStatement', 'solution', 'targetMarket', 
         'category', 'stage', 'demoUrl', 'isPublished'
@@ -339,12 +358,19 @@ async createProject(req, res) {
         }
       });
 
-      // Update images if provided
       if (req.files?.logo) {
-        existingProject.logo = { data: req.files.logo[0].buffer, contentType: req.files.logo[0].mimetype };
+        existingProject.logo = { 
+          data: req.files.logo[0].buffer, 
+          contentType: req.files.logo[0].mimetype,
+          filename: req.files.logo[0].originalname
+        };
       }
       if (req.files?.coverImage) {
-        existingProject.coverImage = { data: req.files.coverImage[0].buffer, contentType: req.files.coverImage[0].mimetype };
+        existingProject.coverImage = { 
+          data: req.files.coverImage[0].buffer, 
+          contentType: req.files.coverImage[0].mimetype,
+          filename: req.files.coverImage[0].originalname
+        };
       }
 
       existingProject.updatedAt = new Date();
@@ -366,7 +392,6 @@ async createProject(req, res) {
     }
   }
 
-  
   async deleteProject(req, res) {
     try {
       const project = await Project.findById(req.params.id);
@@ -402,7 +427,7 @@ async createProject(req, res) {
 
   async toggleUpvote(req, res) {
     try {
-      const project = await Project.findById(req.params.id);
+      const project = await Project.findById(req.params.id).select('upvotes upvoteCount lastActivityAt');
 
       if (!project) {
         return res.status(404).json({
@@ -440,7 +465,7 @@ async createProject(req, res) {
   async expressInterest(req, res) {
     try {
       const { message } = req.body;
-      const project = await Project.findById(req.params.id);
+      const project = await Project.findById(req.params.id).select('interestedInvestors interestCount lastActivityAt');
 
       if (!project) {
         return res.status(404).json({
@@ -488,6 +513,8 @@ async createProject(req, res) {
     try {
       const { page = 1, limit = 20 } = req.query;
       const skip = (page - 1) * limit;
+
+      const Comment = require('../models/Comment');
 
       const [comments, total] = await Promise.all([
         Comment.find({ project: req.params.id, isDeleted: false })
@@ -537,6 +564,7 @@ async createProject(req, res) {
   async addComment(req, res) {
     try {
       const { content, isAnonymous = false } = req.body;
+      const Comment = require('../models/Comment');
 
       if (!content || content.trim().length === 0) {
         return res.status(400).json({
@@ -545,7 +573,7 @@ async createProject(req, res) {
         });
       }
 
-      const project = await Project.findById(req.params.id);
+      const project = await Project.findById(req.params.id).select('commentCount lastActivityAt');
       if (!project) {
         return res.status(404).json({
           success: false,
@@ -592,6 +620,7 @@ async createProject(req, res) {
 
   async deleteComment(req, res) {
     try {
+      const Comment = require('../models/Comment');
       const comment = await Comment.findById(req.params.commentId);
 
       if (!comment) {
@@ -611,7 +640,7 @@ async createProject(req, res) {
       comment.isDeleted = true;
       await comment.save();
 
-      const project = await Project.findById(req.params.projectId);
+      const project = await Project.findById(req.params.projectId).select('commentCount');
       if (project) {
         project.commentCount = Math.max(0, project.commentCount - 1);
         await project.save();
@@ -630,51 +659,51 @@ async createProject(req, res) {
     }
   }
 
-async getMyProjects(req, res) {
-  try {
-    const projects = await Project.find({ 
-      creator: req.user._id 
-    })
-      .select('title tagline problemStatement stage category tags coverImage logo upvoteCount viewCount commentCount interestCount createdAt updatedAt')
-      .sort({ createdAt: -1 })
-      .lean();
+  async getMyProjects(req, res) {
+    try {
+      const projects = await Project.find({ 
+        creator: req.user._id 
+      })
+        .select('title tagline problemStatement stage category tags upvoteCount viewCount commentCount interestCount createdAt updatedAt logo coverImage')
+        .sort({ createdAt: -1 })
+        .lean();
 
-    // Transform projects to match frontend expectations
-    const projectsWithCounts = projects.map(project => ({
-      id: project._id,
-      title: project.title,
-      tagline: project.tagline,
-      description: project.problemStatement,
-      stage: project.stage,
-      category: project.category,
-      tags: project.tags,
-      coverImage: project.coverImage,
-      logo: project.logo,
-      upvotes: project.upvoteCount || 0,
-      comments: project.commentCount || 0,
-      views: project.viewCount || 0,
-      createdAt: project.createdAt,
-      updatedAt: project.updatedAt
-    }));
+      const projectsWithCounts = projects.map(project => ({
+        id: project._id,
+        title: project.title,
+        tagline: project.tagline,
+        description: project.problemStatement,
+        stage: project.stage,
+        category: project.category,
+        tags: project.tags,
+        hasLogo: !!project.logo,
+        hasCoverImage: !!project.coverImage,
+        upvotes: project.upvoteCount || 0,
+        comments: project.commentCount || 0,
+        views: project.viewCount || 0,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt
+      }));
 
-    res.json({
-      success: true,
-      data: {
-        projects: projectsWithCounts
-      }
-    });
-  } catch (error) {
-    console.error('Get my projects error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch your projects'
-    });
+      res.json({
+        success: true,
+        data: {
+          projects: projectsWithCounts
+        }
+      });
+    } catch (error) {
+      console.error('Get my projects error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch your projects'
+      });
+    }
   }
-}
 
   async toggleCommentLike(req, res) {
     try {
-      const comment = await Comment.findById(req.params.commentId);
+      const Comment = require('../models/Comment');
+      const comment = await Comment.findById(req.params.commentId).select('likes likeCount');
 
       if (!comment) {
         return res.status(404).json({
@@ -704,6 +733,39 @@ async getMyProjects(req, res) {
       res.status(500).json({
         success: false,
         message: 'Failed to process like',
+      });
+    }
+  }
+
+  // ✅ ADD THIS METHOD - Debug images
+  async debugImages(req, res) {
+    try {
+      const project = await Project.findById(req.params.id).select('logo coverImage');
+      if (!project) {
+        return res.json({ 
+          success: false, 
+          message: 'Project not found' 
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          hasLogo: !!project.logo,
+          hasCoverImage: !!project.coverImage,
+          logoSize: project.logo?.data?.length || 0,
+          coverSize: project.coverImage?.data?.length || 0,
+          logoType: project.logo?.contentType,
+          coverType: project.coverImage?.contentType,
+          logoFilename: project.logo?.filename,
+          coverFilename: project.coverImage?.filename
+        }
+      });
+    } catch (error) {
+      console.error('Debug error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
       });
     }
   }

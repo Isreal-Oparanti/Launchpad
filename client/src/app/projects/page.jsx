@@ -8,12 +8,109 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import SessionExpiryWarning from '@/components/SessionExpiryWarning';
 
+// ===================== SKELETON COMPONENTS =====================
+const ProjectCardSkeleton = () => {
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full animate-pulse">
+      {/* Cover Image Skeleton */}
+      <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300">
+        {/* Stage Badge Skeleton */}
+        <div className="absolute top-3 right-3">
+          <div className="w-20 h-6 bg-gray-300 rounded-full"></div>
+        </div>
+        
+        {/* Logo Badge Skeleton */}
+        <div className="absolute bottom-3 left-3 w-12 h-12 bg-gray-100 rounded-lg shadow-md"></div>
+      </div>
+
+      {/* Content Skeleton */}
+      <div className="p-5">
+        {/* Title Skeleton */}
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+        
+        {/* Tagline Skeleton */}
+        <div className="space-y-2 mb-3">
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+
+        {/* Problem Statement Skeleton */}
+        <div className="space-y-2 mb-4">
+          <div className="h-3 bg-gray-100 rounded w-full"></div>
+          <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+        </div>
+
+        {/* Tags Skeleton */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <div className="w-16 h-6 bg-gray-200 rounded-md"></div>
+          <div className="w-20 h-6 bg-gray-200 rounded-md"></div>
+          <div className="w-14 h-6 bg-gray-200 rounded-md"></div>
+        </div>
+
+        {/* Needed Roles Badge Skeleton */}
+        <div className="mb-4">
+          <div className="w-32 h-6 bg-gray-200 rounded-lg"></div>
+        </div>
+
+        {/* Creator & Actions Skeleton */}
+        <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-3 bg-gray-100 rounded w-32"></div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-9 bg-gray-200 rounded-lg"></div>
+            <div className="w-8 h-9 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="flex items-center gap-4">
+          <div className="h-4 bg-gray-100 rounded w-20"></div>
+          <div className="h-4 bg-gray-100 rounded w-24"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProjectsGridSkeleton = () => {
+  return (
+    <div className="px-2 py-2 md:px-6 md:py-6">
+      {/* Projects Grid Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <ProjectCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PaginationLoadingSkeleton = () => {
+  return (
+    <div className="mt-6 px-2 py-2 md:px-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <ProjectCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+};
+// ===================== END SKELETON COMPONENTS =====================
+
 const ProjectsPage = () => {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
   
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   
@@ -27,6 +124,7 @@ const ProjectsPage = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('projects');
+  const [debugInfo, setDebugInfo] = useState(null);
   
   const observerTarget = useRef(null);
   const debouncedSearch = useRef(null);
@@ -35,7 +133,16 @@ const ProjectsPage = () => {
     if (userLoading) return;
     
     try {
-      setLoading(true);
+      // ✅ Use different loading states
+      if (isRefresh || pageNum === 1) {
+        setLoading(true);
+        // Clear existing projects for fresh load
+        if (isRefresh) {
+          setProjects([]);
+        }
+      } else {
+        setPaginationLoading(true);
+      }
       
       const response = await projectService.getProjects({
         page: pageNum,
@@ -47,16 +154,17 @@ const ProjectsPage = () => {
       });
       
       if (response.success) {
-        const projectsWithImages = response.data.projects.map(project => ({
+        // Don't create URLs here, just store the flags
+        const projectsWithFlags = response.data.projects.map(project => ({
           ...project,
-          logoUrl: project.logo ? projectService.getLogoUrl(project._id) : null,
-          coverImageUrl: project.coverImage ? projectService.getCoverImageUrl(project._id) : null
+          hasLogo: project.hasLogo || false,
+          hasCoverImage: project.hasCoverImage || false
         }));
         
         if (isRefresh || pageNum === 1) {
-          setProjects(projectsWithImages);
+          setProjects(projectsWithFlags);
         } else {
-          setProjects(prev => [...prev, ...projectsWithImages]);
+          setProjects(prev => [...prev, ...projectsWithFlags]);
         }
         setHasMore(response.data.pagination.hasMore);
         setPage(pageNum);
@@ -67,6 +175,7 @@ const ProjectsPage = () => {
       setHasMore(false);
     } finally {
       setLoading(false);
+      setPaginationLoading(false);
     }
   }, [category, stage, searchQuery, sort, userLoading]);
 
@@ -103,7 +212,7 @@ const ProjectsPage = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
+        if (entries[0].isIntersecting && hasMore && !loading && !paginationLoading) {
           fetchProjects(page + 1);
         }
       },
@@ -120,7 +229,7 @@ const ProjectsPage = () => {
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, loading, page, fetchProjects]);
+  }, [hasMore, loading, paginationLoading, page, fetchProjects]);
 
   // Handle upvote with optimistic update
   const handleUpvote = async (projectId) => {
@@ -193,9 +302,29 @@ const ProjectsPage = () => {
     return colors[stage] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
+  // Debug function to check images
+  const debugImages = async (projectId) => {
+    try {
+      const debug = await projectService.debugProjectImages(projectId);
+      setDebugInfo(debug);
+      console.log('🔍 Image Debug Info:', debug);
+    } catch (error) {
+      console.error('Debug error:', error);
+    }
+  };
+
   const ProjectCard = ({ project }) => {
     const [showMenu, setShowMenu] = useState(false);
+    const [logoLoaded, setLogoLoaded] = useState(false);
+    const [coverLoaded, setCoverLoaded] = useState(false);
+    const [logoError, setLogoError] = useState(false);
+    const [coverError, setCoverError] = useState(false);
+    
     const isOwner = user && user._id === project.creator._id;
+    
+    // Get image URLs
+    const logoUrl = project.hasLogo ? projectService.getLogoUrl(project._id) : null;
+    const coverImageUrl = project.hasCoverImage ? projectService.getCoverImageUrl(project._id) : null;
 
     return (
       <div
@@ -204,22 +333,36 @@ const ProjectsPage = () => {
       >
         {/* Cover Image with Logo */}
         <div className="relative h-48 bg-gradient-to-br from-teal-50 to-blue-50 overflow-hidden">
-          {project.coverImageUrl ? (
+          {/* Cover Image */}
+          {project.hasCoverImage && !coverError && (
             <img
-              src={project.coverImageUrl}
+              src={coverImageUrl}
               alt={project.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-              onError={(e) => {
-                console.error('Cover image failed to load:', project.coverImageUrl);
-                e.target.style.display = 'none';
+              onLoad={() => setCoverLoaded(true)}
+              onError={() => {
+                console.error('Cover image failed to load:', coverImageUrl);
+                setCoverError(true);
               }}
+              style={{ display: coverLoaded ? 'block' : 'none' }}
             />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-teal-400 to-blue-500 flex items-center justify-center">
-              <span className="text-white text-2xl font-bold opacity-30">{project.title.charAt(0)}</span>
-            </div>
           )}
           
+          {/* Cover Fallback */}
+          <div 
+            className={`absolute inset-0 w-full h-full flex items-center justify-center ${
+              (coverError || !project.hasCoverImage) ? 'flex' : 'hidden'
+            }`}
+            style={{ 
+              background: 'linear-gradient(135deg, #0d9488 0%, #0891b2 100%)'
+            }}
+          >
+            <span className="text-white text-2xl font-bold opacity-30">
+              {project.title?.charAt(0) || 'P'}
+            </span>
+          </div>
+          
+          {/* Stage Badge */}
           <div className="absolute top-3 right-3">
             <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getStageColor(project.stage)}`}>
               {project.stage}
@@ -227,24 +370,45 @@ const ProjectsPage = () => {
           </div>
           
           {/* Logo Badge */}
-          {project.logoUrl && (
-            <div className="absolute bottom-3 left-3 w-12 h-12 bg-white rounded-lg shadow-md p-1.5 border border-gray-100">
+          <div className="absolute bottom-3 left-3 w-12 h-12 bg-white rounded-lg shadow-md p-1.5 border border-gray-100">
+            {/* Logo Image */}
+            {project.hasLogo && !logoError && (
               <img 
-                src={project.logoUrl} 
+                src={logoUrl} 
                 alt={`${project.title} logo`} 
                 className="w-full h-full object-contain"
-                onError={(e) => {
-                  console.error('Logo failed to load:', project.logoUrl);
-                  e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = `
-                    <div class="w-full h-full flex items-center justify-center bg-teal-100 text-teal-600 font-bold text-xs rounded">
-                      ${project.title.charAt(0).toUpperCase()}
-                    </div>
-                  `;
+                onLoad={() => setLogoLoaded(true)}
+                onError={() => {
+                  console.error('Logo failed to load:', logoUrl);
+                  setLogoError(true);
                 }}
+                style={{ display: logoLoaded ? 'block' : 'none' }}
               />
+            )}
+            
+            {/* Logo Fallback */}
+            <div 
+              className={`w-full h-full flex items-center justify-center bg-teal-100 text-teal-600 font-bold text-xs rounded ${
+                (logoError || !project.hasLogo) ? 'flex' : 'hidden'
+              }`}
+            >
+              {project.title?.charAt(0).toUpperCase() || 'P'}
             </div>
-          )}
+            
+            {/* Debug button (only in development) */}
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  debugImages(project._id);
+                }}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full hover:bg-red-600"
+                title="Debug Images"
+              >
+                ?
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -417,10 +581,10 @@ const ProjectsPage = () => {
         
         {/* Projects Page Content */}
         <div className="w-full">
-          {/* Header - Sticky */}
-          <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm z-[9]">
-            <div className="px-6 py-6">
-              <div className="flex items-center justify-between mb-4">
+          {/* Header - ALWAYS VISIBLE */}
+          <div className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
+            <div className="px-6 py-2">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div>
                   <h1 className="text-xl md:text-2xl font-bold text-gray-900">Explore Projects</h1>
                   <p className="text-sm text-gray-500 mt-1">Discover innovative ideas and collaborations</p>
@@ -448,9 +612,9 @@ const ProjectsPage = () => {
                     placeholder="Search projects by title, tags, or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-2 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white border border-gray-200 transition-all"
+                    className="w-full text-sm pl-10 pr-2 py-2 md:py-3 md:text-lg bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white border border-gray-200 transition-all"
                   />
-                  <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-4 md:left-3 top-3.5 w-3 h-3 md:w-6 md:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -458,7 +622,7 @@ const ProjectsPage = () => {
                 {/* Filter Toggle */}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors"
+                  className="flex items-center text-sm gap-2 px-3 md:text-lg py-2 md:py-3 text-gray-700 font-medium hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
@@ -522,67 +686,99 @@ const ProjectsPage = () => {
             </div>
           </div>
 
-          {/* Projects Grid */}
-          <div className="px-2 py-2 md:px-6 md:py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {projects.map((project) => (
-                <ProjectCard key={project._id} project={project} />
-              ))}
-            </div>
+          {/* Show skeleton only for projects grid */}
+          {loading ? (
+            <ProjectsGridSkeleton />
+          ) : (
+            <>
+              {/* Projects Grid */}
+              <div className="px-2 py-2 md:px-6 md:py-6">
+                {projects.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {projects.map((project) => (
+                        <ProjectCard key={project._id} project={project} />
+                      ))}
+                    </div>
 
-            {/* Loading Spinner */}
-            {loading && (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-600 border-t-transparent"></div>
-              </div>
-            )}
+                    {/* Pagination Loading */}
+                    {paginationLoading && <PaginationLoadingSkeleton />}
 
-            {/* Infinite Scroll Trigger */}
-            {hasMore && !loading && (
-              <div ref={observerTarget} className="h-20 flex items-center justify-center">
-                <p className="text-sm text-gray-400">Loading more projects...</p>
-              </div>
-            )}
+                    {/* Infinite Scroll Trigger */}
+                    {hasMore && !paginationLoading && (
+                      <div ref={observerTarget} className="h-20 flex items-center justify-center mt-6">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    )}
 
-            {/* End of Results */}
-            {!hasMore && projects.length > 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-400 text-sm">You've reached the end of projects</p>
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && projects.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects found</h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                  {searchQuery || category !== 'all' || stage !== 'all' 
-                    ? "Try adjusting your search or filters to find more projects."
-                    : "Be the first to share your innovative project and inspire others!"
-                  }
-                </p>
-                {(searchQuery || category !== 'all' || stage !== 'all') && (
-                  <button
-                    onClick={() => {
-                      setCategory('all');
-                      setStage('all');
-                      setSort('recent');
-                      setSearchQuery('');
-                    }}
-                    className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors"
-                  >
-                    Clear All Filters
-                  </button>
+                    {/* End of Results */}
+                    {!hasMore && projects.length > 0 && (
+                      <div className="text-center py-12">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <p className="text-gray-600 text-sm font-medium">You've viewed all projects</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Empty State */
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No projects found</h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      {searchQuery || category !== 'all' || stage !== 'all' 
+                        ? "Try adjusting your search or filters to find more projects."
+                        : "Be the first to share your innovative project and inspire others!"
+                      }
+                    </p>
+                    {(searchQuery || category !== 'all' || stage !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setCategory('all');
+                          setStage('all');
+                          setSort('recent');
+                          setSearchQuery('');
+                        }}
+                        className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors"
+                      >
+                        Clear All Filters
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
+
+        {/* Debug Info Modal (development only) */}
+        {debugInfo && process.env.NODE_ENV === 'development' && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-lg font-bold mb-4">Image Debug Info</h3>
+              <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto">
+                {JSON.stringify(debugInfo.data, null, 2)}
+              </pre>
+              <button
+                onClick={() => setDebugInfo(null)}
+                className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Create/Edit Project Modal */}
         {showCreateModal && (
@@ -677,7 +873,7 @@ const ProjectsPage = () => {
   );
 };
 
-// Create Project Modal Component
+// Create Project Modal Component (Same as before, no changes needed)
 const CreateProjectModal = ({ onClose, onSuccess, project }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
